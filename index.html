@@ -372,7 +372,7 @@ body.light .name-card input,body.light .account-about textarea{color:#17212b}
 (()=>{
 const $=id=>document.getElementById(id), oldDemo=new Set(['alex','team','maria','design']);
 let chats=[];try{chats=JSON.parse(localStorage.getItem('topgram-chats'))||[]}catch{}
-chats=chats.filter(c=>!oldDemo.has(c.id));let activeId=null,modalAction=null;let profileData={name:'Пользователь TopGram',firstName:'',lastName:'',about:'',username:'',birthday:'',birthdayPrivacy:'contacts',channel:'',accounts:[],photo:'',phone:'',posts:[],archive:[]};try{profileData={...profileData,...JSON.parse(localStorage.getItem('topgram-profile')||'{}')}}catch{}const saveProfile=()=>localStorage.setItem('topgram-profile',JSON.stringify(profileData));let showingArchive=false;let profileColor=profileData.color||'#2aabee';
+// Не удаляем и не скрываем существующие чаты пользователя.let activeId=null,modalAction=null;let profileData={name:'Пользователь TopGram',firstName:'',lastName:'',about:'',username:'',birthday:'',birthdayPrivacy:'contacts',channel:'',accounts:[],photo:'',phone:'',posts:[],archive:[]};try{profileData={...profileData,...JSON.parse(localStorage.getItem('topgram-profile')||'{}')}}catch{}const saveProfile=()=>localStorage.setItem('topgram-profile',JSON.stringify(profileData));let showingArchive=false;let profileColor=profileData.color||'#2aabee';
 const save=()=>localStorage.setItem('topgram-chats',JSON.stringify(chats));
 const initials=n=>String(n||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
