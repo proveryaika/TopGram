@@ -300,7 +300,7 @@ body.light .name-card input,body.light .account-about textarea{color:#17212b}
 .username-status.available{color:#63b96f}
 .username-status.invalid{color:#df6b75}
 .username-status+ .username-description{margin-top:26px}
-</style>
+.chat-action-sheet{display:flex;flex-direction:column;gap:8px}.chat-action-sheet button{width:100%;padding:14px 16px;text-align:left;border:0;border-radius:13px;background:#263746;color:#f5f7fa;font-size:16px;font-weight:500}.chat-action-sheet button:active{filter:brightness(1.15)}.chat-action-sheet button.danger{color:#ef777e}.modal{max-width:min(420px,calc(100vw - 32px))}</style>
 </head>
 <body>
 <div class="app" id="app">
@@ -408,7 +408,7 @@ $('publicationsTab').onclick=()=>{showingArchive=false;$('publicationsTab').clas
 $('archiveTab').onclick=()=>{showingArchive=true;$('archiveTab').classList.add('active');$('publicationsTab').classList.remove('active');renderProfile()};
 $('addPost').onclick=()=>modal('Новая публикация','<label for="postText">Текст публикации</label><input id="postText" maxlength="300" placeholder="Что нового?">',()=>{let text=$('postText').value.trim();if(!text)return toast('Напиши текст публикации');profileData.posts.unshift({text:text,created:Date.now()});saveProfile();close();renderProfile();toast('Публикация добавлена')},'Опубликовать');
 
-function profile(c){modal('Профиль','<div style="text-align:center"><div class="avatar" style="margin:0 auto 12px">'+esc(initials(c.name))+'</div><strong>'+esc(c.name)+'</strong><p style="color:#8292a2">'+esc(c.handle||'TopGram')+'</p></div>',close,'Закрыть')}
+function profile(c){modal('Действия чата','<div class="chat-action-sheet"><button type="button" data-chat-action="profile">Открыть профиль</button><button type="button" data-chat-action="mute">'+(c.muted?'Включить уведомления':'Отключить уведомления')+'</button><button type="button" data-chat-action="clear">Очистить историю</button><button type="button" data-chat-action="delete" class="danger">Удалить чат</button></div>',close,'Закрыть');document.querySelectorAll('[data-chat-action]').forEach(b=>b.onclick=()=>{const action=b.dataset.chatAction;if(action==='profile'){modal('Профиль','<div style="text-align:center"><div class="avatar" style="margin:0 auto 12px">'+esc(initials(c.name))+'</div><strong>'+esc(c.name)+'</strong><p style="color:#8292a2">'+esc(c.handle||'TopGram')+'</p></div>',close,'Готово')}else if(action==='mute'){c.muted=!c.muted;save();close();toast(c.muted?'Уведомления отключены':'Уведомления включены')}else if(action==='clear'){modal('Очистить историю?','<p>Все сообщения в этом диалоге будут удалены с этого устройства.</p>',()=>{c.messages=[];c.last='';c.time='';c.updated=Date.now();save();close();select(c.id);toast('История очищена')},'Очистить')}else if(action==='delete'){modal('Удалить чат?','<p>Диалог и его сообщения будут удалены с этого устройства.</p>',()=>{chats=chats.filter(x=>x.id!==c.id);save();close();$('app').classList.remove('open-chat');activeId=null;render();toast('Чат удалён')},'Удалить')}})}
 
 render();save();renderProfile();
 })();
