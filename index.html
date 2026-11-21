@@ -234,6 +234,40 @@ body.light .account-top{background:#f1f4f7}
 body.light .account-back,body.light .account-save,body.light .account-card,body.light .account-about,body.light .account-logout,body.light #extraAccounts{background:#fff;color:#17212b}
 body.light .name-card input,body.light .account-about textarea{color:#17212b}
 @media(max-width:600px){.account-top{height:82px;padding:8px 12px}.account-top>strong{font-size:22px}.account-save{font-size:17px;padding:14px 18px}.account-scroll{padding:8px 16px 24px}.account-card{border-radius:27px;padding:19px 21px}.name-card input{height:68px;font-size:21px}.account-row strong{font-size:18px}.account-hint{font-size:16px}}
+
+/* Account screen refinement */
+.account-view{position:absolute;inset:0;z-index:35;background:#17212b;color:#f5f7fa}
+.account-top{height:88px;min-height:88px;padding:10px 14px;grid-template-columns:58px minmax(0,1fr) auto;gap:8px;position:relative;z-index:2}
+.account-top>strong{font-size:23px;letter-spacing:-.25px}
+.account-back{width:58px;height:58px;border-radius:50%;background:#202e3d;border-color:#344454}
+.account-save{height:58px;padding:0 24px;border-radius:34px;background:#202e3d;border:1px solid #344454;font-size:18px;font-weight:600;letter-spacing:-.2px}
+.account-scroll{padding:8px 16px max(28px,env(safe-area-inset-bottom));overscroll-behavior:contain;scrollbar-width:none}
+.account-scroll::-webkit-scrollbar{display:none}
+.account-card{border-radius:28px;padding:20px 22px;margin-bottom:18px;background:#1e2a38}
+.account-card h3{font-size:18px;margin:0 0 18px;line-height:1.3}
+.name-card{padding-top:21px;padding-bottom:12px}
+.name-card input{height:68px;font-size:22px;padding:0 2px;border-bottom:1px solid rgba(10,18,26,.42)}
+.name-card input:last-child{border:0}
+.account-about{min-height:78px;margin-top:18px;padding:14px 21px;border-radius:27px}
+.account-about textarea{font:inherit;font-size:21px;line-height:1.35;min-height:46px}
+.account-hint{font-size:16px;line-height:1.4;margin:12px 14px 28px;color:#81909e}
+.info-card{padding-top:20px;padding-bottom:12px}
+.info-card .account-row{min-height:78px;padding:10px 0;gap:18px}
+.account-app-icon{width:48px;height:48px;border-radius:15px;font-size:25px;box-shadow:inset 0 1px 1px #ffffff30}
+.account-row strong{font-size:19px;line-height:1.3;font-weight:450;letter-spacing:-.2px}
+.account-row small{font-size:15px;line-height:1.35}
+.birthday-hint{margin:0 14px 28px}
+.extras-card{padding:10px 22px}
+.extras-card .account-row{min-height:82px}
+.extras-card .account-row em{font-size:18px}
+.account-logout{min-height:72px;border-radius:26px;padding:17px 22px;font-size:20px}
+.account-secondary{min-height:68px}
+.account-secondary strong{font-size:18px;font-weight:500}
+.account-view button{-webkit-tap-highlight-color:transparent;cursor:pointer}
+.account-view button:active{filter:brightness(1.13)}
+.account-view input:focus,.account-view textarea:focus{outline:none}
+.account-view input:focus-visible,.account-view textarea:focus-visible{box-shadow:0 1px 0 #69b7f0}
+@media(max-width:390px){.account-top{grid-template-columns:52px minmax(0,1fr) auto;padding-inline:10px}.account-back{width:52px;height:52px}.account-save{height:52px;padding:0 17px;font-size:17px}.account-scroll{padding-inline:14px}.account-card{padding-inline:19px}.account-row strong{font-size:18px}}
 </style>
 </head>
 <body>
@@ -249,7 +283,7 @@ body.light .name-card input,body.light .account-about textarea{color:#17212b}
 <section class="account-card info-card"><h3>Информация о Вас</h3>
 <button class="account-row" id="accountPhone"><span class="account-app-icon phone-icon">☎</span><span><strong id="accountPhoneText">Номер телефона пока не назначен</strong><small>Нажмите, чтобы узнать о номере телефона</small></span></button>
 <button class="account-row" id="accountUsername"><span class="account-app-icon username-icon">@</span><span><strong id="accountUsernameText">Добавить имя пользователя</strong></span></button>
-<button class="account-row" id="accountBirthday"><span class="account-app-icon birthday-icon">♟</span><span><strong id="accountBirthdayText">Указать день рождения</strong></span></button>
+<button class="account-row" id="accountBirthday"><span class="account-app-icon birthday-icon">🎂</span><span><strong id="accountBirthdayText">Указать день рождения</strong></span></button>
 </section>
 <p class="account-hint birthday-hint">Ваш день рождения могут видеть только контакты. <button id="birthdayPrivacy">Изменить ›</button></p>
 <section class="account-card extras-card"><button class="account-row" id="personalChannel"><span class="account-app-icon channel-icon">◀</span><span><strong>Личный канал</strong></span><em id="channelAction">Добавить</em></button><button class="account-row" id="chatAutomation"><span class="account-app-icon ai-icon">✧Ai</span><span><strong>Автоматизация чатов <i>NEW</i></strong></span></button></section>
@@ -293,7 +327,7 @@ $('addPost').style.display=showingArchive?'none':'block';
 $('profileTab').onclick=()=>{$('app').classList.remove('open-chat');$('app').classList.add('profile-open');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));$('profileTab').classList.add('active');renderProfile()};
 $('choosePhoto').onclick=()=>$('photoInput').click();
 $('photoInput').onchange=e=>{const file=e.target.files[0];if(!file)return;if(!file.type.startsWith('image/'))return toast('Выбери изображение');if(file.size>3*1024*1024)return toast('Фото должно быть меньше 3 МБ');const reader=new FileReader();reader.onload=()=>{profileData.photo=reader.result;saveProfile();renderProfile();toast('Фото профиля обновлено')};reader.readAsDataURL(file);e.target.value=''};
-function openAccount(){const parts=(profileData.name||'').trim().split(/\\s+/);$('accountFirst').value=profileData.firstName||parts[0]||'';$('accountLast').value=profileData.lastName||parts.slice(1).join(' ');$('accountAbout').value=profileData.about||'';$('aboutCount').textContent=70-$('accountAbout').value.length;$('accountPhoneText').textContent=profileData.phone||'Номер телефона пока не назначен';$('accountUsernameText').textContent=profileData.username?'@'+profileData.username:'Добавить имя пользователя';$('accountBirthdayText').textContent=profileData.birthday?new Date(profileData.birthday+'T12:00:00').toLocaleDateString('ru-RU'):'Указать день рождения';$('channelAction').textContent=profileData.channel?'Открыть':'Добавить';$('extraAccounts').innerHTML=(profileData.accounts||[]).length>1?profileData.accounts.slice(1).map((a,i)=>'<div class="account-secondary"><span class="account-app-icon">'+esc((a.name||'T')[0])+'</span><strong>'+esc(a.name||'Дополнительный аккаунт')+'</strong></div>').join(''):'';$('app').classList.add('account-open');$('accountView').scrollTop=0}
+function openAccount(){const parts=(profileData.name||'').trim().split(/\\s+/);$('accountFirst').value=profileData.firstName||parts[0]||'';$('accountLast').value=profileData.lastName||parts.slice(1).join(' ');$('accountAbout').value=profileData.about||'';$('aboutCount').textContent=70-$('accountAbout').value.length;$('accountPhoneText').textContent=profileData.phone||'Номер телефона пока не назначен';$('accountUsernameText').textContent=profileData.username?'@'+profileData.username:'Добавить имя пользователя';$('accountBirthdayText').textContent=profileData.birthday?new Date(profileData.birthday+'T12:00:00').toLocaleDateString('ru-RU'):'Указать день рождения';$('channelAction').textContent=profileData.channel?'Открыть':'Добавить';$('extraAccounts').innerHTML=(profileData.accounts||[]).length>1?profileData.accounts.slice(1).map((a,i)=>'<div class="account-secondary"><span class="account-app-icon">'+esc((a.name||'T')[0])+'</span><strong>'+esc(a.name||'Дополнительный аккаунт')+'</strong></div>').join(''):'';$('app').classList.add('account-open');$('accountView').querySelector('.account-scroll').scrollTop=0}
 $('editProfile').onclick=openAccount;
 $('accountBack').onclick=()=>{$('app').classList.remove('account-open');renderProfile()};
 $('accountAbout').oninput=()=>$('aboutCount').textContent=70-$('accountAbout').value.length;
@@ -301,7 +335,7 @@ $('accountSave').onclick=()=>{const first=$('accountFirst').value.trim(),last=$(
 $('accountPhone').onclick=()=>modal('Номер телефона','<p>В демоверсии номер телефона ещё не назначается. Позже здесь будет отображаться номер, подключённый к твоему аккаунту TopGram.</p>',close,'Понятно');
 $('accountUsername').onclick=()=>{modal('Имя пользователя','<label for="accountUsernameInput">Имя пользователя</label><input id="accountUsernameInput" maxlength="24" value="'+esc(profileData.username||'')+'" placeholder="Например, topgram_user"><p style="color:#8292a2;font-size:13px">Латинские буквы, цифры и подчёркивание; от 5 до 24 символов.</p>',()=>{const v=$('accountUsernameInput').value.trim().replace(/^@/,'');if(v&&!/^[a-zA-Z0-9_]{5,24}$/.test(v))return toast('Проверь имя пользователя');profileData.username=v;saveProfile();close();openAccount();toast('Имя пользователя сохранено')},'Сохранить')};
 $('accountBirthday').onclick=()=>modal('День рождения','<label for="birthdayInput">Дата рождения</label><input id="birthdayInput" type="date" value="'+esc(profileData.birthday||'')+'">',()=>{profileData.birthday=$('birthdayInput').value;saveProfile();close();openAccount();toast('Дата рождения сохранена')},'Сохранить');
-$('birthdayPrivacy').onclick=()=>modal('Кто видит день рождения?','<p>В демоверсии дата отображается только в настройках твоего профиля. Управление видимостью для контактов добавим позже.</p>',close,'Понятно');
+$('birthdayPrivacy').onclick=()=>modal('Кто видит день рождения?','<label for="birthdayPrivacySelect">Видимость</label><select id="birthdayPrivacySelect" style="width:100%;padding:13px;border-radius:12px;background:#263543;color:white;border:1px solid #34485a;margin:8px 0 14px"><option value="contacts">Мои контакты</option><option value="nobody">Никто</option><option value="everyone">Все</option></select>',()=>{profileData.birthdayPrivacy=$('birthdayPrivacySelect').value;saveProfile();close();toast('Настройка видимости сохранена')},'Сохранить');$('birthdayPrivacy').dataset.ready='1';
 $('personalChannel').onclick=()=>modal('Личный канал','<label for="channelInput">Название канала</label><input id="channelInput" maxlength="40" value="'+esc(profileData.channel||'')+'" placeholder="Мой канал">',()=>{const v=$('channelInput').value.trim();if(!v)return toast('Введи название канала');profileData.channel=v;saveProfile();close();openAccount();toast('Название канала сохранено')},'Сохранить');
 $('chatAutomation').onclick=()=>modal('Автоматизация чатов','<p>Подключение ботов и автоматические ответы пока недоступны в демоверсии. Здесь появится настройка, когда будет готов сервер TopGram.</p>',close,'Понятно');
 $('accountLogout').onclick=()=>modal('Выход','<p>В демоверсии нет серверной авторизации, поэтому выход пока только закрывает страницу аккаунта.</p>',()=>{close();$('app').classList.remove('account-open');renderProfile()},'Понятно');
