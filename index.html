@@ -46,7 +46,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const now=()=>new Intl.DateTimeFormat('ru-RU',{hour:'2-digit',minute:'2-digit'}).format(new Date());
 function toast(t){$('notice').textContent=t;$('notice').classList.add('show');setTimeout(()=>$('notice').classList.remove('show'),2200)}
 function render(){let q=$('search').value.toLowerCase().trim();let list=chats.filter(c=>(c.name+' '+(c.handle||'')+' '+(c.last||'')).toLowerCase().includes(q)).sort((a,b)=>(b.updated||0)-(a.updated||0));$('chatList').innerHTML=list.length?list.map(c=>'<button class="chat" data-id="'+esc(c.id)+'"><div class="avatar '+esc(c.color||'')+'">'+esc(initials(c.name))+'</div><div class="meta"><div class="chat-top"><span class="chat-name">'+esc(c.name)+'</span><span class="time">'+esc(c.time||'')+'</span></div><div class="preview">'+esc(c.last||'Нет сообщений')+'</div></div></button>').join(''):'<div class="empty"><strong>Пока нет чатов</strong>Здесь появятся только диалоги, которые ты начнёшь сам или в которых тебе напишут.</div>';document.querySelectorAll('.chat[data-id]').forEach(b=>b.onclick=()=>select(b.dataset.id))}
-function select(id){let c=chats.find(x=>x.id===id);if(!c)return;activeId=id;$('app').classList.add('open-chat');$('chatHead').innerHTML='<button class="back" id="back">‹</button><div class="avatar '+esc(c.color||'')+'">'+esc(initials(c.name))+'</div><strong>'+esc(c.name)+'</strong><button class="header-btn" id="chatMenu">⋮</button>';$('back').onclick=()=>$('app').classList.remove('open-chat');$('chatMenu').onclick=()=>profile(c);$('messages').innerHTML=c.messages.map(m=>'<div class="bubble '+(m.mine?'mine':'')+'">'+esc(m.text)+'<span class="stamp">'+esc(m.time)+'</span></div>').join('');$('messages').scrollTop=$('messages').scrollHeight;render()}
+function select(id){$('app').classList.remove('profile-open');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));$('chatsTab').classList.add('active');let c=chats.find(x=>x.id===id);if(!c)return;activeId=id;$('app').classList.add('open-chat');$('chatHead').innerHTML='<button class="back" id="back">‹</button><div class="avatar '+esc(c.color||'')+'">'+esc(initials(c.name))+'</div><strong>'+esc(c.name)+'</strong><button class="header-btn" id="chatMenu">⋮</button>';$('back').onclick=()=>$('app').classList.remove('open-chat');$('chatMenu').onclick=()=>profile(c);$('messages').innerHTML=c.messages.map(m=>'<div class="bubble '+(m.mine?'mine':'')+'">'+esc(m.text)+'<span class="stamp">'+esc(m.time)+'</span></div>').join('');$('messages').scrollTop=$('messages').scrollHeight;render()}
 $('composer').onsubmit=e=>{e.preventDefault();let input=$('messageInput'),text=input.value.trim(),c=chats.find(x=>x.id===activeId);if(!text||!c)return;let time=now();c.messages.push({text,mine:true,time});c.last=text;c.time=time;c.updated=Date.now();save();input.value='';select(c.id)};
 function modal(title,body,action,label='Готово'){$('modalTitle').textContent=title;$('modalBody').innerHTML=body;$('confirmModal').textContent=label;modalAction=action;$('modalBackdrop').classList.add('show')}
 function close(){ $('modalBackdrop').classList.remove('show');modalAction=null}
@@ -56,11 +56,30 @@ $('searchToggle').onclick=()=>{$('searchWrap').classList.toggle('show');if($('se
 $('search').oninput=render;
 function newChat(){modal('Новый чат','<label for="newName">Имя или @username</label><input id="newName" placeholder="@username" autocomplete="off">',()=>{let name=$('newName').value.trim().replace(/^@/, '');if(!name)return toast('Введи имя пользователя');let found=chats.find(c=>(c.handle||'').toLowerCase()==='@'+name.toLowerCase());if(found){close();select(found.id);return}let id='chat-'+Date.now();chats.push({id,name,handle:'@'+name,type:'person',messages:[],last:'',time:now(),updated:Date.now()});save();close();select(id);toast('Диалог создан')},'Открыть')}
 $('contactsTab').onclick=newChat;
-$('chatsTab').onclick=()=>{$('app').classList.remove('open-chat');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));$('chatsTab').classList.add('active')};
-$('settingsTab').onclick=()=>modal('Настройки','<p>Настройки TopGram появятся здесь.</p>',close,'Закрыть');
+$('chatsTab').onclick=()=>{$('app').classList.remove('profile-open');$('app').classList.remove('open-chat');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));$('chatsTab').classList.add('active')};
+$('settingsTab').onclick=()=>{document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));$('settingsTab').classList.add('active');modal('Настройки','<p>Настройки демоверсии TopGram</p>',close,'Закрыть')};
+function renderProfile(){
+$('profileName').textContent=profileData.name;
+$('profilePhoto').innerHTML=profileData.photo?'<img alt="Фото профиля" src="'+profileData.photo+'">':'•';
+$('profilePhone').textContent=profileData.phone||'Будет назначен позже';
+let items=showingArchive?profileData.archive:profileData.posts;
+$('postsArea').innerHTML=items.length?'<div class="post-list">'+items.map(p=>'<div class="post-card">'+(p.image?'<img src="'+p.image+'" alt="Публикация">':'<p>'+esc(p.text)+'</p>')+'</div>').join('')+'</div>':'<div class="posts-empty"><strong>'+(showingArchive?'Архив пока пуст...':'Публикаций пока нет...')+'</strong><p>'+(showingArchive?'Здесь будут сохранённые публикации':'Публикуйте фотографии и видео в своём профиле')+'</p></div>';
+$('addPost').style.display=showingArchive?'none':'block';
+}
+$('profileTab').onclick=()=>{$('app').classList.remove('open-chat');$('app').classList.add('profile-open');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));$('profileTab').classList.add('active');renderProfile()};
+$('choosePhoto').onclick=()=>$('photoInput').click();
+$('photoInput').onchange=e=>{const file=e.target.files[0];if(!file)return;if(!file.type.startsWith('image/'))return toast('Выбери изображение');if(file.size>3*1024*1024)return toast('Фото должно быть меньше 3 МБ');const reader=new FileReader();reader.onload=()=>{profileData.photo=reader.result;saveProfile();renderProfile();toast('Фото профиля обновлено')};reader.readAsDataURL(file);e.target.value=''};
+$('editProfile').onclick=()=>modal('Изменить профиль','<label for="profileNameInput">Имя</label><input id="profileNameInput" maxlength="40" value="'+esc(profileData.name)+'" placeholder="Твоё имя">',()=>{let v=$('profileNameInput').value.trim();if(!v)return toast('Имя не должно быть пустым');profileData.name=v;saveProfile();renderProfile();close();toast('Профиль обновлён')},'Сохранить');
+$('profileSettings').onclick=()=>modal('Настройки профиля','<p>Фото и имя профиля сохраняются на этом устройстве.</p><p style="color:#8292a2;font-size:13px">Номер телефона пока не подключён. В будущей версии он будет отображаться после назначения системой TopGram.</p>',close,'Понятно');
+$('profileMenu').onclick=()=>$('profileSettings').click();
+$('qrBtn').onclick=()=>modal('QR профиля','<div style="text-align:center"><div style="font-size:48px;margin:16px">▦</div><strong>'+esc(profileData.name)+'</strong><p style="color:#8292a2">QR-код появится после подключения аккаунтов TopGram.</p></div>',close,'Закрыть');
+$('publicationsTab').onclick=()=>{showingArchive=false;$('publicationsTab').classList.add('active');$('archiveTab').classList.remove('active');renderProfile()};
+$('archiveTab').onclick=()=>{showingArchive=true;$('archiveTab').classList.add('active');$('publicationsTab').classList.remove('active');renderProfile()};
+$('addPost').onclick=()=>modal('Новая публикация','<label for="postText">Текст публикации</label><input id="postText" maxlength="300" placeholder="Что нового?">',()=>{let text=$('postText').value.trim();if(!text)return toast('Напиши текст публикации');profileData.posts.unshift({text:text,created:Date.now()});saveProfile();close();renderProfile();toast('Публикация добавлена')},'Опубликовать');
+
 function profile(c){modal('Профиль','<div style="text-align:center"><div class="avatar" style="margin:0 auto 12px">'+esc(initials(c.name))+'</div><strong>'+esc(c.name)+'</strong><p style="color:#8292a2">'+esc(c.handle||'TopGram')+'</p></div>',close,'Закрыть')}
-$('profileTab').onclick=()=>modal('Профиль','<p>Локальный профиль TopGram.</p><p style="color:#8292a2;font-size:13px">Регистрация и синхронизация между устройствами будут доступны после подключения сервера.</p>',close,'Закрыть');
-render();save();
+
+render();save();renderProfile();
 })();
 </script></body>
 </html>
