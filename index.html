@@ -268,6 +268,14 @@ body.light .name-card input,body.light .account-about textarea{color:#17212b}
 .account-view input:focus,.account-view textarea:focus{outline:none}
 .account-view input:focus-visible,.account-view textarea:focus-visible{box-shadow:0 1px 0 #69b7f0}
 @media(max-width:390px){.account-top{grid-template-columns:52px minmax(0,1fr) auto;padding-inline:10px}.account-back{width:52px;height:52px}.account-save{height:52px;padding:0 17px;font-size:17px}.account-scroll{padding-inline:14px}.account-card{padding-inline:19px}.account-row strong{font-size:18px}}
+
+.account-app-icon svg{width:37px;height:37px;display:block;color:#fff;overflow:visible}
+.phone-icon svg{width:34px;height:34px}
+.username-icon svg{width:36px;height:36px}
+.birthday-icon svg{width:36px;height:36px}
+.channel-icon svg{width:37px;height:37px}
+.ai-icon svg{width:39px;height:39px}
+.account-app-icon{border-radius:15px;box-shadow:inset 0 1px 1px #ffffff35,0 1px 2px #0002}
 </style>
 </head>
 <body>
@@ -281,12 +289,12 @@ body.light .name-card input,body.light .account-about textarea{color:#17212b}
 <section class="account-card name-card"><h3>Ваше имя</h3><input id="accountFirst" maxlength="40" placeholder="Имя"><input id="accountLast" maxlength="40" placeholder="Фамилия"></section>
 <div class="account-about"><textarea id="accountAbout" maxlength="70" placeholder="«О себе»"></textarea><span id="aboutCount">70</span></div><p class="account-hint">Напишите немного о себе.</p>
 <section class="account-card info-card"><h3>Информация о Вас</h3>
-<button class="account-row" id="accountPhone"><span class="account-app-icon phone-icon">☎</span><span><strong id="accountPhoneText">Номер телефона пока не назначен</strong><small>Нажмите, чтобы узнать о номере телефона</small></span></button>
-<button class="account-row" id="accountUsername"><span class="account-app-icon username-icon">@</span><span><strong id="accountUsernameText">Добавить имя пользователя</strong></span></button>
-<button class="account-row" id="accountBirthday"><span class="account-app-icon birthday-icon">🎂</span><span><strong id="accountBirthdayText">Указать день рождения</strong></span></button>
+<button class="account-row" id="accountPhone"><span class="account-app-icon phone-icon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14.2 8.5c1.4-.8 3.2-.3 4 1l3.2 5.3c.8 1.3.6 2.9-.5 4l-2.6 2.5c2.1 4.2 5.5 7.6 9.7 9.7l2.5-2.6c1.1-1.1 2.7-1.3 4-.5l5.3 3.2c1.3.8 1.8 2.6 1 4l-1.8 3c-1 1.7-3 2.5-4.9 2.1C20.7 37.1 10.9 27.3 7.8 13.9c-.4-1.9.4-3.9 2.1-4.9z" fill="currentColor"/></svg></span><span><strong id="accountPhoneText">Номер телефона пока не назначен</strong><small>Нажмите, чтобы узнать о номере телефона</small></span></button>
+<button class="account-row" id="accountUsername"><span class="account-app-icon username-icon"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="23.5" cy="24" r="13.5" fill="none" stroke="currentColor" stroke-width="3.8"/><path d="M37 22v8.2c0 3.3 4.8 3.7 6 .7" fill="none" stroke="currentColor" stroke-width="3.8" stroke-linecap="round"/><path d="M23.5 17.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Z" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M37 37v8m-4-4h8" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg></span><span><strong id="accountUsernameText">Добавить имя пользователя</strong></span></button>
+<button class="account-row" id="accountBirthday"><span class="account-app-icon birthday-icon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 25h32v13a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" fill="currentColor"/><path d="M8 25c0-4 4-6 8-6s8 2 12 2 8-2 12-2v7H8z" fill="currentColor"/><path d="M15 18v-5m9 5v-7m9 7v-5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M15 12c-2-2 1-4 0-6m9 4c-2-2 1-4 0-6m9 8c-2-2 1-4 0-6" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M8 31h32" stroke="#1685c9" stroke-width="2.4" stroke-linecap="round"/></svg></span><span><strong id="accountBirthdayText">Указать день рождения</strong></span></button>
 </section>
 <p class="account-hint birthday-hint">Ваш день рождения могут видеть только контакты. <button id="birthdayPrivacy">Изменить ›</button></p>
-<section class="account-card extras-card"><button class="account-row" id="personalChannel"><span class="account-app-icon channel-icon">◀</span><span><strong>Личный канал</strong></span><em id="channelAction">Добавить</em></button><button class="account-row" id="chatAutomation"><span class="account-app-icon ai-icon">✧Ai</span><span><strong>Автоматизация чатов <i>NEW</i></strong></span></button></section>
+<section class="account-card extras-card"><button class="account-row" id="personalChannel"><span class="account-app-icon channel-icon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 20v9a3 3 0 0 0 3 3h5l13 9V8L15 17h-5a3 3 0 0 0-3 3Z" fill="currentColor"/><path d="M33 18c4 3 4 10 0 13m4-18c7 6 7 17 0 23" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg></span><span><strong>Личный канал</strong></span><em id="channelAction">Добавить</em></button><button class="account-row" id="chatAutomation"><span class="account-app-icon ai-icon"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m15 5 2.5 7.5L25 15l-7.5 2.5L15 25l-2.5-7.5L5 15l7.5-2.5zM34 22l2.3 6.7L43 31l-6.7 2.3L34 40l-2.3-6.7L25 31l6.7-2.3zM31 5l1.5 4.5L37 11l-4.5 1.5L31 17l-1.5-4.5L25 11l4.5-1.5z" fill="currentColor"/><text x="22" y="25" fill="currentColor" font-size="11" font-weight="800">Ai</text></svg></span><span><strong>Автоматизация чатов <i>NEW</i></strong></span></button></section>
 <p class="account-hint automation-hint">Подключите бота, который будет отвечать на сообщения от Вашего имени.</p>
 <div id="extraAccounts"></div>
 <button class="account-logout" id="accountLogout"><span>⇥</span> Выход</button>
