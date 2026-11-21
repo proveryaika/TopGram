@@ -372,7 +372,16 @@ body.light .name-card input,body.light .account-about textarea{color:#17212b}
 (()=>{
 const $=id=>document.getElementById(id), oldDemo=new Set(['alex','team','maria','design']);
 let chats=[];try{chats=JSON.parse(localStorage.getItem('topgram-chats'))||[]}catch{}
-chats=Array.isArray(chats)?chats:[];let activeId=null,modalAction=null;let profileData={name:'Пользователь TopGram',firstName:'',lastName:'',about:'',username:'',birthday:'',birthdayPrivacy:'contacts',channel:'',accounts:[],photo:'',phone:'',posts:[],archive:[]};try{profileData={...profileData,...JSON.parse(localStorage.getItem('topgram-profile')||'{}')}}catch{}const saveProfile=()=>localStorage.setItem('topgram-profile',JSON.stringify(profileData));let showingArchive=false;let profileColor=profileData.color||'#2aabee';
+chats=Array.isArray(chats)?chats:[];
+/* Восстанавливаем стандартные демонстрационные диалоги, которые ранее ошибочно скрывались фильтром. */
+const restoredDemo=[
+{id:'alex',name:'Алексей',handle:'@alex',type:'person',messages:[],last:'',time:'',updated:Date.now()-4000,color:'blue'},
+{id:'team',name:'Команда',handle:'',type:'group',messages:[],last:'',time:'',updated:Date.now()-3000,color:'green'},
+{id:'maria',name:'Мария',handle:'@maria',type:'person',messages:[],last:'',time:'',updated:Date.now()-2000,color:'pink'},
+{id:'design',name:'Дизайн',handle:'',type:'group',messages:[],last:'',time:'',updated:Date.now()-1000,color:'purple'}
+];
+restoredDemo.forEach(item=>{if(!chats.some(c=>c.id===item.id))chats.push(item)});
+let activeId=null,modalAction=null;let profileData={name:'Пользователь TopGram',firstName:'',lastName:'',about:'',username:'',birthday:'',birthdayPrivacy:'contacts',channel:'',accounts:[],photo:'',phone:'',posts:[],archive:[]};try{profileData={...profileData,...JSON.parse(localStorage.getItem('topgram-profile')||'{}')}}catch{}const saveProfile=()=>localStorage.setItem('topgram-profile',JSON.stringify(profileData));let showingArchive=false;let profileColor=profileData.color||'#2aabee';
 const save=()=>localStorage.setItem('topgram-chats',JSON.stringify(chats));
 const initials=n=>String(n||'?').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
