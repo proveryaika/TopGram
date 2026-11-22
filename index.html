@@ -762,9 +762,11 @@ function ensureGiftAdminButton(){
 }
 async function loadTopgramGiftAdmin(){
   try{
+    if(profileData.username)await tgGiftApi('save_username',{username:profileData.username});
     const data=await tgGiftApi('list');
     topgramGiftAdmin=!!data.is_admin;
     topgramGiftRows=Array.isArray(data.gifts)?data.gifts:[];
+    if(data.username!==undefined){profileData.username=data.username||'';profileData.collectibleUsername=data.collectible_username||'';saveProfile();renderProfile()}
     if(topgramGiftAdmin)ensureGiftAdminButton();
     else $('settingGiftAdmin')?.remove();
   }catch(error){
@@ -972,7 +974,7 @@ async function renderProfileGifts(){
 }
 function renderProfile(){
 $('profileName').textContent=profileData.name||'Пользователь TopGram';
-$('profileUsername').textContent=profileData.username?'@'+profileData.username:'';$('profileUsernameItem').hidden=!profileData.username;
+$('profileUsername').textContent=(profileData.username?'@'+profileData.username:'')+(profileData.collectibleUsername?'\nКоллекционный: @'+profileData.collectibleUsername:'');$('profileUsernameItem').hidden=!profileData.username&&!profileData.collectibleUsername;
 $('profileAbout').textContent=profileData.about||'';$('profileAboutItem').hidden=!profileData.about;
 $('profilePhoto').style.background=profileColor;$('profilePhoto').innerHTML=profileData.photo?'<img alt="Фото профиля" src="'+profileData.photo+'">':'•';
 const linkedPhone=profileData.phone||localStorage.getItem('topgram-linked-number')||'';if(linkedPhone&&profileData.phone!==linkedPhone){profileData.phone=linkedPhone;saveProfile()}$('profilePhone').textContent=displayPhone(linkedPhone)||'Номер появится после входа по номеру TopGram';
