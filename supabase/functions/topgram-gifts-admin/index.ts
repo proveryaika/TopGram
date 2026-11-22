@@ -31,12 +31,50 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || "list");
 
+    if (action === "save_username") {
+      const raw = body.username == null ? "" : String(body.username).trim().replace(/^@/, "").toLowerCase();
+      if (raw && !/^[a-z0-9_]{5,24}$/.test(raw)) return reply({ error: "Юзернейм должен содержать 5–24 символа: латиница, цифры и _" }, 400);
+      const { error } = await adminDb.from("topgram_usernames").upsert({
+        user_id: userId, username: raw || null, updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" });
+      if (error) return reply({ error: error.code === "23505" ? "Этот юзернейм уже занят" : error.message }, 400);
+      return reply({ success: true, username: raw });
+    }
+    if (action === "grant_stars") {
+      if (!isAdmin) return reply({ error: "Доступ только владельцу TopGram" }, 403);
+      const username = String(body.username || "").trim().replace(/^@/, "").toLowerCase();
+      const amount = Number(body.amount);
+      if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000000) return reply({ error: "Укажи количество от 1 до 1 000 000 000 ⭐" }, 400);
+      const { data, error } = await adminDb.rpc("topgram_admin_grant_stars", { p_admin_id: userId, p_username: username, p_amount: amount });
+      if (error) return reply({ error: error.message || "Не удалось выдать звёзды" }, 400);
+      return reply({ success: true, result: data });
+    }
+    if (action === "assign_collectible_username") {
+      if (!isAdmin) return reply({ error: "Доступ только владельцу TopGram" }, 403);
+      const username = String(body.username || "").trim().replace(/^@/, "").toLowerCase();
+      const collectible = String(body.collectible_username || "").trim().replace(/^@/, "").toLowerCase();
+      const { data, error } = await adminDb.rpc("topgram_admin_assign_collectible_username", {
+        p_admin_id: userId, p_username: username, p_collectible_username: collectible
+      });
+      if (error) return reply({ error: error.message || "Не удалось назначить коллекционный юзернейм" }, 400);
+      return reply({ success: true, result: data });
+    }
+    if (action === "stats") {
+      if (!isAdmin) return reply({ error: "Доступ только владельцу TopGram" }, 403);
+      const { data, error } = await adminDb.rpc("topgram_admin_stats", { p_admin_id: userId });
+      if (error) return reply({ error: error.message || "Не удалось загрузить статистику" }, 400);
+      return reply({ success: true, stats: data });
+    }
     if (action === "list") {
       const { data: gifts, error } = await adminDb.from("topgram_gifts")
         .select("id,gift_key,gift_name,asset_key,price_stars,total_supply,issued_count,is_active,created_at")
         .eq("is_active", true).order("created_at", { ascending: false });
       if (error) throw error;
-      return reply({ success: true, is_admin: isAdmin, gifts: gifts || [] });
+      const { data: usernameRow, error: usernameError } = await adminDb.from("topgram_usernames")
+        .select("username,collectible_username").eq("user_id", userId).maybeSingle();
+      if (usernameError) throw usernameError;
+      return reply({ success: true, is_admin: isAdmin, gifts: gifts || [],
+        username: usernameRow?.username ?? null, collectible_username: usernameRow?.collectible_username ?? null });
     }
     if (action === "inventory") {
       const { data: inventory, error } = await adminDb.from("topgram_gift_inventory")
