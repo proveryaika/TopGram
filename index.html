@@ -1122,7 +1122,7 @@ async function openGiftInventory(){
   const items=data.inventory||[];
   const rows=items.map(item=>{
     const g=item.gift||{},attrs=item.attributes||{},nft=!!item.upgraded_at;
-    const canUpgrade=!nft&&g.upgrade_enabled&&(item.upgrade_prepaid||Number(g.upgrade_issued_count)+Number(g.upgrade_reserved_count||0)<Number(g.upgrade_total_supply));
+    const canUpgrade=!nft&&(item.upgrade_prepaid||(g.upgrade_enabled&&Number(g.upgrade_issued_count)+Number(g.upgrade_reserved_count||0)<Number(g.upgrade_total_supply)));
     return '<div class="tg-inventory-card">'+tgGiftCardArt(g,attrs)+'<div class="tg-inventory-info"><b>'+esc(g.gift_name||'Подарок TopGram')+(nft?' <span class="tg-nft-label">NFT</span>':'')+'</b>'+
       (nft?'<small>№ '+Number(item.serial_number||0)+'</small><small>Модель: '+esc(attrs.model||'—')+'</small><small>Узор: '+esc(attrs.pattern||'—')+'</small><small>Фон: '+esc(attrs.background||'—')+'</small>':'<small>Обычный подарок</small>')+
       (item.name_hidden?'<small>Отправитель скрыт</small>':(item.sender_id?'<small>Отправлен пользователем</small>':'<small>Твой подарок</small>'))+
@@ -1154,9 +1154,9 @@ function openGiftTransfer(item){
 function openGiftUpgrade(item){
   const gift=item.gift||{};
   if(item.upgraded_at)return toast('Этот подарок уже улучшен.');
-  if(!gift.upgrade_enabled)return toast('Владелец TopGram пока не выпустил улучшение для этого подарка.');
-  const remaining=Number(gift.upgrade_total_supply)-Number(gift.upgrade_issued_count);
-  if(remaining<=0)return toast('Тираж коллекционных улучшений закончился.');
+  if(!gift.upgrade_enabled&&!item.upgrade_prepaid)return toast('Владелец TopGram пока не выпустил улучшение для этого подарка.');
+  const remaining=Math.max(0,Number(gift.upgrade_total_supply)-Number(gift.upgrade_issued_count)-Number(gift.upgrade_reserved_count||0));
+  if(remaining<=0&&!item.upgrade_prepaid)return toast('Тираж коллекционных улучшений закончился.');
   const price=item.upgrade_prepaid?0:Number(gift.upgrade_price_stars||0);
   modal('Улучшить подарок',
     '<div class="tg-upgrade-confirm">'+tgGiftCardArt(gift,{})+'<h3>'+esc(gift.gift_name)+'</h3><p>Обычный подарок станет коллекционным NFT. Модель, узор и фон будут выбраны случайно с учётом редкости.</p><p>Стоимость: <b>'+price.toLocaleString('ru-RU')+' ⭐</b></p><small>Осталось улучшений в серии: '+remaining+'</small></div>',
@@ -1201,7 +1201,7 @@ async function renderProfileGifts(){
     if(!items.length){area.innerHTML='<div class="profile-gifts-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут отображаться здесь.</p></div>';return}
     area.innerHTML='<div class="profile-gifts-grid">'+items.map(item=>{
       const g=item.gift||{},a=item.attributes||{},nft=!!item.upgraded_at;
-      const canUpgrade=!nft&&g.upgrade_enabled&&Number(g.upgrade_issued_count)<Number(g.upgrade_total_supply);
+      const canUpgrade=!nft&&(item.upgrade_prepaid||(g.upgrade_enabled&&Number(g.upgrade_issued_count)+Number(g.upgrade_reserved_count||0)<Number(g.upgrade_total_supply)));
       return '<div class="profile-gift-card">'+tgGiftCardArt(g,a)+'<b>'+esc(g.gift_name||'Подарок TopGram')+(nft?' ✦ NFT':'')+'</b>'+
         (nft?'<small>№ '+Number(item.serial_number||0)+'</small><small>Модель: '+esc(a.model||'—')+'</small><small>Узор: '+esc(a.pattern||'—')+'</small><small>Фон: '+esc(a.background||'—')+'</small>':'<small>Обычный подарок</small>')+
         (canUpgrade?'<button type="button" class="profile-gift-upgrade" data-id="'+esc(item.id)+'">✦ Улучшить'+(item.upgrade_prepaid?' бесплатно':' · '+Number(g.upgrade_price_stars).toLocaleString('ru-RU')+' ⭐')+'</button>':'')+
