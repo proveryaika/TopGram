@@ -536,8 +536,10 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 .tg-gift-art.tg-real-composite{position:relative;display:grid;place-items:center;overflow:hidden;isolation:isolate;border-radius:22px;background:radial-gradient(circle at 50% 35%,var(--tg-bg-c),var(--tg-bg-b) 48%,var(--tg-bg-a) 100%)!important;box-shadow:inset 0 1px 0 #ffffff55,0 8px 24px #0005}
 .tg-real-composite:before{content:"";position:absolute;inset:7px;border:1px solid #ffffff38;border-radius:17px;z-index:1;pointer-events:none}
 .tg-real-glow{position:absolute;width:76%;height:76%;border-radius:50%;background:var(--tg-bg-c);filter:blur(25px);opacity:.35}
-.tg-real-model{position:relative;z-index:2;width:76%;height:76%;object-fit:contain;filter:var(--tg-model-filter) drop-shadow(0 9px 7px #05091499);transition:filter .3s ease}
-.tg-real-pattern{position:absolute;z-index:3;width:76%;height:76%;background-image:var(--tg-pattern-image);background-size:cover;background-position:center;opacity:.62;mix-blend-mode:screen;-webkit-mask-image:var(--tg-gift-mask);mask-image:var(--tg-gift-mask);-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;mask-position:center;mask-size:contain;pointer-events:none}
+.tg-real-model{display:block!important;visibility:visible!important;opacity:1!important;position:relative;z-index:2;width:76%;height:76%;object-fit:contain;filter:var(--tg-model-filter) drop-shadow(0 9px 7px #05091499);transition:filter .3s ease}
+.tg-real-pattern{display:block!important;visibility:visible!important;position:absolute;z-index:3;width:76%;height:76%;background-image:var(--tg-pattern-image);background-size:cover;background-position:center;opacity:.82;mix-blend-mode:screen;-webkit-mask-image:var(--tg-gift-mask);mask-image:var(--tg-gift-mask);-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;mask-position:center;mask-size:contain;pointer-events:none}
+.tg-real-composite .tg-real-model{display:block!important}
+.tg-real-composite .tg-real-pattern{display:block!important}
 .tg-real-sheen{position:absolute;inset:0;z-index:4;background:linear-gradient(125deg,transparent 28%,#ffffff20 43%,transparent 58%);pointer-events:none}
 .tg-upgrade-stage .tg-real-composite{width:158px;height:158px;border-radius:30px}
 .tg-inventory-card .tg-real-composite,.profile-gift-card .tg-real-composite{overflow:hidden}
