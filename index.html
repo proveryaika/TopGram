@@ -857,6 +857,52 @@ function tgPackAssetPaths(gift){
   if(gift.upgrade){for(const [key,items] of [['models',upgrade.models],['patterns',upgrade.patterns],['backdrops',upgrade.backdrops]]){const selectable=(items||[]).filter(x=>x&&x.name&&!x.crafted&&Number(x.permille??1)>0);if(selectable.length<2)throw new Error('Для NFT-улучшения нужны минимум два варианта: '+key+'.');}}
   return [...new Set(paths.filter(Boolean).map(String))];
 }
+async function tgEnsureLottieLibrary(){
+  if(window.lottie)return window.lottie;
+  if(window.__tgLottieLoading)return window.__tgLottieLoading;
+  window.__tgLottieLoading=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie.min.js';
+    script.onload=()=>window.lottie?resolve(window.lottie):reject(new Error('Не удалось загрузить Lottie player.'));
+    script.onerror=()=>reject(new Error('Не удалось загрузить Lottie player.'));
+    document.head.appendChild(script);
+  });
+  return window.__tgLottieLoading;
+}
+async function tgPreviewPackAnimation(path){
+  const zip=window.__tgPackPreviewZip,container=$('tgPackPreviewCanvas');
+  if(!zip||!container)return;
+  try{
+    const entry=zip.file(path);if(!entry)throw new Error('Файл не найден: '+path);
+    let bytes=await entry.async('arraybuffer');
+    if(path.toLowerCase().endsWith('.tgs')){
+      if(!('DecompressionStream' in window))throw new Error('Браузер не поддерживает распаковку TGS.');
+      const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+      bytes=await new Response(stream).arrayBuffer();
+    }
+    const animationData=JSON.parse(new TextDecoder().decode(bytes));
+    const lottie=await tgEnsureLottieLibrary();
+    if(window.__tgPackPreviewPlayer)window.__tgPackPreviewPlayer.destroy();
+    container.innerHTML='';
+    window.__tgPackPreviewPlayer=lottie.loadAnimation({container,renderer:'svg',loop:true,autoplay:true,animationData});
+  }catch(error){container.textContent='Предпросмотр недоступен: '+error.message}
+}
+async function tgRenderGiftPackPreviews(result){
+  window.__tgPackPreviewZip=result.zip;
+  const root=$('tgPackPreviewList');if(!root)return;
+  const items=[];
+  result.manifest.gifts.forEach((gift,index)=>{
+    items.push({label:String(gift.title)+' · обычный',path:gift.base_animation});
+    (gift.upgrade?.models||[]).forEach(x=>{if(x.animation)items.push({label:String(gift.title)+' · модель '+String(x.name||''),path:x.animation})});
+    (gift.upgrade?.patterns||[]).forEach(x=>{if(x.animation)items.push({label:String(gift.title)+' · узор '+String(x.name||''),path:x.animation})});
+  });
+  window.__tgPackPreviewItems=items;
+  root.innerHTML=items.map((item,index)=>'<button type="button" class="tg-pack-preview-choice" data-preview-index="'+index+'">'+esc(item.label)+'</button>').join('');
+  root.querySelectorAll('[data-preview-index]').forEach(btn=>btn.onclick=()=>tgPreviewPackAnimation(items[Number(btn.dataset.previewIndex)].path));
+  const first=items[0];if(first)await tgPreviewPackAnimation(first.path);
+  const backdropNames=result.manifest.gifts.flatMap(g=>(g.upgrade?.backdrops||[]).map(x=>String(g.title)+': '+String(x.name||'фон')));
+  if(backdropNames.length)root.insertAdjacentHTML('beforeend','<p class="tg-admin-hint">Фоны: '+backdropNames.map(esc).join(' · ')+'</p>');
+}
 async function tgInspectGiftPack(file){
   if(!file||file.size<1||file.size>32*1024*1024)throw new Error('ZIP должен быть не больше 32 МБ.');
   const JSZip=await tgEnsureGiftZipLibrary();
@@ -910,7 +956,7 @@ async function tgImportGiftPack(pack){
         const blob=await entry.async('blob');
         const destination='pack-assets/'+pack.id+'/'+sourcePath.split('/').map(encodeURIComponent).join('/');
         const put=await fetch(TG_SUPABASE_URL+'/storage/v1/object/topgram-gift-assets/'+destination,{
-          method:'POST',headers:{'apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':sourcePath.endsWith('.tgs')?'application/gzip':'application/json','x-upsert':'true'},body:blob
+          method:'POST',headers:{'apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/octet-stream','x-upsert':'true'},body:blob
         });
         const data=await put.json().catch(()=>({}));
         if(!put.ok)throw new Error(data.message||data.error||('Не удалось сохранить ресурс '+sourcePath));
@@ -953,7 +999,7 @@ function openGiftPacksAdmin(){
   modal('TopGram · наборы подарков',
     '<div class="tg-admin-form"><p class="tg-admin-hint">Загрузи ZIP с pack.json и Lottie/TGS. После проверки архив появится на полке. Из полки можно импортировать подарки в каталог; повторный импорт не создаёт дубликаты.</p>'+
     '<label for="tgPackFile">ZIP-архив набора</label><input id="tgPackFile" type="file" accept=".zip,application/zip">'+
-    '<div id="tgPackInspection" class="tg-admin-hint">Архив не выбран.</div>'+
+    '<div id="tgPackInspection" class="tg-admin-hint">Архив не выбран.</div><div id="tgPackPreviewList" class="tg-pack-preview-list"></div><div id="tgPackPreviewCanvas" class="tg-pack-preview-canvas" style="width:100%;height:220px;max-width:320px;margin:12px auto"></div>'+
     '<label for="tgPackKey">ID набора</label><input id="tgPackKey" maxlength="48" placeholder="summer_2026" autocapitalize="none">'+
     '<label for="tgPackName">Название набора</label><input id="tgPackName" maxlength="80" placeholder="Летняя коллекция">'+
     '<label for="tgPackDescription">Описание</label><textarea id="tgPackDescription" maxlength="500" rows="3" placeholder="Описание набора"></textarea>'+
@@ -969,7 +1015,7 @@ function openGiftPacksAdmin(){
       $('tgPackName').value=result.manifest.pack_name||'';
       $('tgPackDescription').value=result.manifest.description||'';
       if(!$('tgPackKey').value)$('tgPackKey').value=String(result.manifest.pack_name||'gift_pack').toLowerCase().replace(/[^a-z0-9_-]+/g,'_').slice(0,48);
-      status.textContent='Проверка пройдена: '+result.gifts.length+' подарков · '+(file.size/1024/1024).toFixed(2)+' МБ. '+result.gifts.map(g=>g.title+' ('+g.stars+' ⭐)').join(' · ');
+      status.textContent='Проверка пройдена: '+result.gifts.length+' подарков · '+(file.size/1024/1024).toFixed(2)+' МБ. '+result.gifts.map(g=>g.title+' ('+g.stars+' ⭐)').join(' · ');await tgRenderGiftPackPreviews(result);
     }catch(error){status.textContent='Ошибка проверки: '+error.message}
   };
   $('tgPackUpload').onclick=async()=>{
