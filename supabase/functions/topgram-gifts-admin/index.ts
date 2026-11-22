@@ -18,7 +18,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return reply({ error: "Method not allowed" }, 405);
   try {
-    const token = (req.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "");
+    const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     if (!token) return reply({ error: "Требуется вход в TopGram" }, 401);
     const authClient = createClient(URL, ANON_KEY, { auth: { persistSession: false } });
     const { data: authData, error: authError } = await authClient.auth.getUser(token);
