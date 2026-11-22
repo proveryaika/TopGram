@@ -532,6 +532,26 @@ $('tgAuthPhoneBack').onclick=()=>tgAuthShow('welcome');
 $('tgAuthCodeBack').onclick=()=>tgAuthShow('phone');
 $('tgAuthNumber').addEventListener('input',()=>{$('tgAuthNumber').value=$('tgAuthNumber').value.replace(/[^0-9 ]/g,'').slice(0,14)});
 async function tgAuthCall(name,payload){if(!TG_SUPABASE_ANON_KEY||TG_SUPABASE_ANON_KEY.includes('PASTE_'))throw new Error('Нужно добавить публичный ключ Supabase в настройки TopGram.');const response=await fetch(TG_SUPABASE_URL+'/functions/v1/'+name,{method:'POST',headers:{'Content-Type':'application/json','apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+TG_SUPABASE_ANON_KEY},body:JSON.stringify(payload)});let data={};try{data=await response.json()}catch{}if(!response.ok)throw new Error(data.message||data.error||'Ошибка сервера. Попробуй позже.');return data}
+
+async function tgAuthSyncProfile(){
+  const session=tgAuthSavedSession();
+  if(!session?.access_token)return;
+  try{
+    const response=await fetch(TG_SUPABASE_URL+'/functions/v1/sync-topgram-profile',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':TG_SUPABASE_ANON_KEY,
+        'Authorization':'Bearer '+session.access_token
+      },
+      body:JSON.stringify({})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)console.warn('TopGram profile sync:',data.error||response.status);
+  }catch(error){console.warn('TopGram profile sync failed:',error)}
+}
+if(tgAuthSavedSession())tgAuthSyncProfile();
+
 $('tgAuthSend').onclick=async()=>{const digits=tgAuthDigits();if(!/^([17])[0-9]{10}$/.test(digits))return $('tgAuthError').textContent='Проверь номер: нужно 10 цифр после кода страны.';tgAuthNumber=digits;$('tgAuthSend').disabled=true;$('tgAuthSend').textContent='Отправляем…';try{await tgAuthCall('request-login-code',{number:digits});tgAuthShow('code');$('tgAuthOtp').focus()}catch(e){$('tgAuthError').textContent=e.message}finally{$('tgAuthSend').disabled=false;$('tgAuthSend').textContent='Получить код'}};
 $('tgAuthOtp').addEventListener('input',()=>{$('tgAuthOtp').value=$('tgAuthOtp').value.replace(/\D/g,'').slice(0,6)});
 $('tgAuthVerify').onclick=async()=>{const code=$('tgAuthOtp').value.trim();if(!/^\d{6}$/.test(code))return $('tgAuthError').textContent='Введи шестизначный код.';$('tgAuthVerify').disabled=true;$('tgAuthVerify').textContent='Проверяем…';try{const data=await tgAuthCall('verify-login-code',{number:tgAuthNumber,code});if(!data.session)throw new Error(data.error||'Сервер не вернул сессию.');localStorage.setItem(tgAuthSessionKey,JSON.stringify(data.session));localStorage.setItem('topgram-linked-number','+'+tgAuthNumber.slice(0,1)+' '+tgAuthNumber.slice(1));profileData.phone='+'+tgAuthNumber.slice(0,1)+' '+tgAuthNumber.slice(1);saveProfile();tgAuthEnter()}catch(e){$('tgAuthError').textContent=e.message}finally{$('tgAuthVerify').disabled=false;$('tgAuthVerify').textContent='Продолжить'}};
