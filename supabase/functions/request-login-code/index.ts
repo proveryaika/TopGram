@@ -28,13 +28,20 @@ async function hashCode(number: string, code: string): Promise<string> {
   return Array.from(new Uint8Array(signature), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   try {
     const body = await req.json();
     const digits = digitsOnly(String(body.number ?? ""));
     if (!/^([17])[0-9]{10}$/.test(digits)) {
-      return Response.json({ ok: true, message: "Если номер зарегистрирован, код будет отправлен в Telegram." });
+      return Response.json({ ok: true, message: "Если номер зарегистрирован, код будет отправлен в Telegram." }, { headers: corsHeaders });
     }
 
     const { data: numberRow } = await supabase
@@ -45,7 +52,7 @@ Deno.serve(async (req) => {
 
     // Use the same public response whether the number exists or not.
     if (!numberRow) {
-      return Response.json({ ok: true, message: "Если номер зарегистрирован, код будет отправлен в Telegram." });
+      return Response.json({ ok: true, message: "Если номер зарегистрирован, код будет отправлен в Telegram." }, { headers: corsHeaders });
     }
 
     const { data: recent } = await supabase
@@ -58,7 +65,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (recent && Date.now() - new Date(recent.created_at).getTime() < 60_000) {
-      return Response.json({ ok: true, message: "Если номер зарегистрирован, код будет отправлен в Telegram." });
+      return Response.json({ ok: true, message: "Если номер зарегистрирован, код будет отправлен в Telegram." }, { headers: corsHeaders });
     }
 
     const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
@@ -80,8 +87,8 @@ Deno.serve(async (req) => {
     });
     if (!sent.ok) throw new Error("Telegram delivery failed");
 
-    return Response.json({ ok: true, message: "Если номер зарегистрирован, код будет отправлен в Telegram." });
+    return Response.json({ ok: true, message: "Если номер зарегистрирован, код будет отправлен в Telegram." }, { headers: corsHeaders });
   } catch (_error) {
-    return Response.json({ ok: false, message: "Не удалось отправить код. Попробуй позже." }, { status: 500 });
+    return Response.json({ ok: false, message: "Не удалось отправить код. Попробуй позже." }, { status: 500, headers: corsHeaders });
   }
 });
