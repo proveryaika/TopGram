@@ -935,7 +935,7 @@ async function tgInspectGiftPack(file){
   const manifest=JSON.parse(await manifestFile.async('string'));
   if(!manifest.pack_name||!Array.isArray(manifest.gifts)||!manifest.gifts.length)throw new Error('В pack.json нужны pack_name и непустой массив gifts.');
   if(manifest.gifts.length>100)throw new Error('В одном наборе допускается не более 100 подарков.');
-  const titles=new Set(),slugs=new Set(),gifts=[];
+  const titles=new Set(),slugs=new Set(),gifts=[];let totalUncompressed=0;
   for(const gift of manifest.gifts){
     const title=String(gift?.title||'').trim();
     if(gift.auction||gift.require_premium||gift.support_only||gift.limited_per_user||Number(gift.resell_min_stars||0)>0)throw new Error('В этом наборе есть аукционные, Premium, support-only или resale-правила, которые пока не поддерживаются TopGram.');
@@ -950,8 +950,9 @@ async function tgInspectGiftPack(file){
       if(path.startsWith('/')||path.split('/').includes('..'))throw new Error('Недопустимый путь анимации: '+path);
       const asset=zip.file(path);
       if(!asset)throw new Error('Не найден файл анимации: '+path);
-      const size=Number(asset._data?.uncompressedSize||0);
+      const size=Number(asset._data?.uncompressedSize||0);totalUncompressed+=size;
       if(size>8*1024*1024)throw new Error('Файл анимации больше 8 МБ: '+path);
+      if(totalUncompressed>64*1024*1024)throw new Error('Распакованный объём ресурсов набора превышает 64 МБ.');
       await tgDecodePackAnimation(asset,path);
     }
     gifts.push({title,stars:Number(gift.stars),animation:gift.base_animation});
@@ -1061,7 +1062,7 @@ function openGiftPacksAdmin(){
       if(!upload.ok)throw new Error(uploaded.message||uploaded.error||'Не удалось загрузить ZIP в хранилище.');
       const saved=await tgGiftRpc('topgram_admin_save_gift_pack',{
         p_admin_id:tgCurrentUserId(),p_pack_key:key,p_pack_name:name,p_description:description||String(inspected.manifest.description||''),
-        p_manifest:{format:'owpengram-pack-v1',assets_bucket:'topgram-gift-assets',archive_path:path,archive_size_bytes:file.size,pack_manifest:inspected.manifest,validated_gifts:inspected.gifts}
+        p_manifest:{format:'topgram-gift-pack-v1',assets_bucket:'topgram-gift-assets',archive_path:path,archive_size_bytes:file.size,pack_manifest:inspected.manifest,validated_gifts:inspected.gifts}
       });
       toast('Архив «'+(saved.pack_name||name)+'» сохранён. Подарков: '+inspected.gifts.length+'.');
       $('tgPackFile').value='';$('tgPackInspection').textContent='ZIP загружен на полку.';
