@@ -941,6 +941,7 @@ async function tgRenderGiftPackPreviews(result){
   root.innerHTML=items.map((item,index)=>'<button type="button" class="tg-pack-preview-choice" data-preview-index="'+index+'">'+esc(item.label)+'</button>').join('');
   root.querySelectorAll('[data-preview-index]').forEach(btn=>btn.onclick=()=>tgPreviewPackAnimation(items[Number(btn.dataset.previewIndex)].path));
   const first=items[0];if(first)await tgPreviewPackAnimation(first.path);
+  const rules=result.manifest.gifts.map(g=>{const tags=[];if(g.limited)tags.push('тираж '+Number(g.availability_total||0));if(g.birthday)tags.push('день рождения');if(Number(g.convert_stars||0)>0)tags.push('конвертация '+Number(g.convert_stars)+' ⭐');if(Number(g.per_user_total||0)>0)tags.push('лимит '+Number(g.per_user_total));if(Number(g.resell_min_stars||0)>0)tags.push('перепродажа от '+Number(g.resell_min_stars)+' ⭐');return tags.length?String(g.title)+': '+tags.join(', '):''}).filter(Boolean);if(rules.length)root.insertAdjacentHTML('beforeend','<p class="tg-admin-hint">Правила подарков: '+rules.map(esc).join(' · ')+'</p>');
   const backdropNames=result.manifest.gifts.flatMap(g=>(g.upgrade?.backdrops||[]).map(x=>String(g.title)+': '+String(x.name||'фон')));
   if(backdropNames.length)root.insertAdjacentHTML('beforeend','<p class="tg-admin-hint">Фоны: '+backdropNames.map(esc).join(' · ')+'</p>');
 }
@@ -975,7 +976,7 @@ async function tgInspectGiftPack(file){
       if(totalUncompressed>64*1024*1024)throw new Error('Распакованный объём ресурсов набора превышает 64 МБ.');
       await tgDecodePackAnimation(asset,path);
     }
-    gifts.push({title,stars:Number(gift.stars),animation:gift.base_animation});
+    gifts.push({title,stars:Number(gift.stars),animation:gift.base_animation,limited:!!gift.limited,availability_total:Number(gift.availability_total||0),birthday:!!gift.birthday,convert_stars:Number(gift.convert_stars||0),per_user_total:Number(gift.per_user_total||0),resell_min_stars:Number(gift.resell_min_stars||0),upgradeable:Number(gift.upgrade?.supply_total||0)>0});
   }
   return {zip,manifest,gifts};
 }
@@ -1089,7 +1090,7 @@ function openGiftPacksAdmin(){
       $('tgPackName').value=result.manifest.pack_name||'';
       $('tgPackDescription').value=result.manifest.description||'';
       if(!$('tgPackKey').value)$('tgPackKey').value=String(result.manifest.pack_name||'gift_pack').toLowerCase().replace(/[^a-z0-9_-]+/g,'_').slice(0,48);
-      status.textContent='Проверка пройдена: '+result.gifts.length+' подарков · '+(file.size/1024/1024).toFixed(2)+' МБ. '+result.gifts.map(g=>g.title+' ('+g.stars+' ⭐)').join(' · ');await tgRenderGiftPackPreviews(result);
+      status.textContent='Проверка пройдена: '+result.gifts.length+' подарков · '+(file.size/1024/1024).toFixed(2)+' МБ. '+result.gifts.map(g=>g.title+' ('+g.stars+' ⭐'+(g.limited?' · тираж '+g.availability_total:'')+(g.birthday?' · день рождения':'')+(g.upgradeable?' · NFT':'')+(g.convert_stars?' · конвертация '+g.convert_stars+' ⭐':'')+(g.per_user_total?' · лимит '+g.per_user_total:'')+')').join(' · ');await tgRenderGiftPackPreviews(result);
     }catch(error){status.textContent='Ошибка проверки: '+error.message}
   };
   $('tgPackUpload').onclick=async()=>{
@@ -1550,9 +1551,10 @@ async function openGiftMarketplace(){
   wireTopgramGiftImages($('modalBody'));
 }
 function openGiftListing(item){
-  modal('Выставить NFT на продажу','<div class="tg-admin-form"><label for="tgListingPrice">Цена в Stars</label><input id="tgListingPrice" type="number" min="1" max="1000000000" value="100" inputmode="numeric"><p class="tg-admin-hint">NFT останется у тебя до покупки. После продажи Stars поступят на твой баланс.</p></div>',async()=>{
+  const minPrice=Math.max(1,Number(item.gift?.gift_manifest?.resell_min_stars||0));
+  modal('Выставить NFT на продажу','<div class="tg-admin-form"><label for="tgListingPrice">Цена в Stars</label><input id="tgListingPrice" type="number" min="'+minPrice+'" max="1000000000" value="'+Math.max(100,minPrice)+'" inputmode="numeric"><p class="tg-admin-hint">NFT останется у тебя до покупки. После продажи Stars поступят на твой баланс.'+(minPrice>1?' Минимальная цена для этого подарка — '+minPrice.toLocaleString('ru-RU')+' ⭐.':'')+'</p></div>',async()=>{
     const price=Number($('tgListingPrice').value);
-    if(!Number.isSafeInteger(price)||price<1||price>1000000000)return toast('Укажи цену от 1 до 1 000 000 000 Stars.');
+    if(!Number.isSafeInteger(price)||price<minPrice||price>1000000000)return toast('Укажи цену от '+minPrice.toLocaleString('ru-RU')+' до 1 000 000 000 Stars.');
     $('confirmModal').disabled=true;
     try{await tgGiftApi('create_listing',{inventory_id:item.id,price_stars:price});close();toast('NFT выставлен на рынок.');openGiftInventory()}
     catch(error){toast(error.message);$('confirmModal').disabled=false}
