@@ -869,24 +869,47 @@ async function tgEnsureLottieLibrary(){
   });
   return window.__tgLottieLoading;
 }
+async function tgDecodePackAnimation(entry,path){
+  const ext=String(path).toLowerCase().split('.').pop();
+  if(!['tgs','json'].includes(ext))throw new Error('Поддерживаются только .tgs и .json. Файл .lottie предварительно экспортируй в JSON или TGS.');
+  let bytes=await entry.async('arraybuffer');
+  if(ext==='tgs'){
+    if(bytes.byteLength>512*1024)throw new Error('TGS-файл больше 512 КБ: '+path);
+    if(!('DecompressionStream' in window))throw new Error('Браузер не поддерживает распаковку TGS.');
+    bytes=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  }
+  if(bytes.byteLength>4*1024*1024)throw new Error('Распакованная Lottie-анимация больше 4 МБ: '+path);
+  const data=JSON.parse(new TextDecoder().decode(bytes));
+  const duration=(Number(data.op)-Number(data.ip))/Number(data.fr);
+  if(Number(data.w)!==512||Number(data.h)!==512)throw new Error('Размер анимации должен быть ровно 512×512: '+path);
+  if(!(Number(data.fr)>0&&Number(data.fr)<=120&&Number(data.ip)>=0&&Number(data.op)>Number(data.ip)&&duration<=30))throw new Error('Некорректная частота кадров или длительность анимации: '+path);
+  if(!Array.isArray(data.layers)||!data.layers.length)throw new Error('В анимации нет слоёв: '+path);
+  const inspect=value=>{
+    if(typeof value==='string'){if(/^https?:\/\//i.test(value))throw new Error('Внешние URL в анимациях запрещены: '+path);return}
+    if(Array.isArray(value)){value.forEach(inspect);return}
+    if(value&&typeof value==='object'){
+      if(Object.prototype.hasOwnProperty.call(value,'x'))throw new Error('Lottie expressions запрещены: '+path);
+      if(value.ty===2)throw new Error('Image layers запрещены: '+path);
+      if(value.p&&value.u)throw new Error('Внешние image assets запрещены: '+path);
+      Object.values(value).forEach(inspect);
+    }
+  };
+  inspect(data);
+  return data;
+}
 async function tgPreviewPackAnimation(path){
   const zip=window.__tgPackPreviewZip,container=$('tgPackPreviewCanvas');
   if(!zip||!container)return;
   try{
     const entry=zip.file(path);if(!entry)throw new Error('Файл не найден: '+path);
-    let bytes=await entry.async('arraybuffer');
-    if(path.toLowerCase().endsWith('.tgs')){
-      if(!('DecompressionStream' in window))throw new Error('Браузер не поддерживает распаковку TGS.');
-      const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-      bytes=await new Response(stream).arrayBuffer();
-    }
-    const animationData=JSON.parse(new TextDecoder().decode(bytes));
+    const animationData=await tgDecodePackAnimation(entry,path);
     const lottie=await tgEnsureLottieLibrary();
     if(window.__tgPackPreviewPlayer)window.__tgPackPreviewPlayer.destroy();
     container.innerHTML='';
     window.__tgPackPreviewPlayer=lottie.loadAnimation({container,renderer:'svg',loop:true,autoplay:true,animationData});
   }catch(error){container.textContent='Предпросмотр недоступен: '+error.message}
 }
+
 async function tgRenderGiftPackPreviews(result){
   window.__tgPackPreviewZip=result.zip;
   const root=$('tgPackPreviewList');if(!root)return;
@@ -927,8 +950,9 @@ async function tgInspectGiftPack(file){
       if(path.startsWith('/')||path.split('/').includes('..'))throw new Error('Недопустимый путь анимации: '+path);
       const asset=zip.file(path);
       if(!asset)throw new Error('Не найден файл анимации: '+path);
-      const size=await asset.async('uint8array').then(x=>x.byteLength);
+      const size=Number(asset._data?.uncompressedSize||0);
       if(size>8*1024*1024)throw new Error('Файл анимации больше 8 МБ: '+path);
+      await tgDecodePackAnimation(asset,path);
     }
     gifts.push({title,stars:Number(gift.stars),animation:gift.base_animation});
   }
