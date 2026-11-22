@@ -1216,7 +1216,7 @@ function openGiftAdmin(){
       gift._upgradeAttributes={};
       for(const key of ['model','pattern','background']){
         const saved=Array.isArray(configured[key])&&configured[key].length?configured[key]:loaded[key];
-        gift._upgradeAttributes[key]=saved.map(v=>typeof v==='string'?{name:v,rarity_percent:1}:{name:v.name,rarity_percent:Number(v.rarity_percent)||1,...(v.animation_path?{animation_path:v.animation_path}:{})});
+        gift._upgradeAttributes[key]=saved.map(v=>typeof v==='string'?{name:v,rarity_percent:1}:{name:v.name,rarity_percent:Number(v.rarity_percent)||1,...(v.animation_path?{animation_path:v.animation_path}:{}),...(v.center?{center:v.center}:{}),...(v.edge?{edge:v.edge}:{}),...(v.pattern?{pattern:v.pattern}:{}),...(v.text?{text:v.text}:{})});
       }
       $('tgAttrModel').value=JSON.stringify(gift._upgradeAttributes.model,null,2);$('tgAttrPattern').value=JSON.stringify(gift._upgradeAttributes.pattern,null,2);$('tgAttrBackground').value=JSON.stringify(gift._upgradeAttributes.background,null,2);$('tgUpgradeAttributeSummary').textContent='Моделей: '+gift._upgradeAttributes.model.length+' · узоров: '+gift._upgradeAttributes.pattern.length+' · фонов: '+gift._upgradeAttributes.background.length+'. Меняй rarity_percent для настройки вероятности выпадения.';
     }catch(e){$('tgUpgradeAttributeSummary').textContent='Не удалось загрузить параметры: '+e.message;gift._upgradeAttributes=null}
@@ -1308,6 +1308,7 @@ function tgGiftSymbolGlyph(name){
   return hit?hit[1]:'✧';
 }
 function tgGiftBackdropPalette(name){
+  if(name&&typeof name==='object'){const valid=v=>/^#[0-9a-f]{6}$/i.test(String(v||''));const center=name.center,edge=name.edge,pattern=name.pattern||name.text;if(valid(center)&&valid(edge))return [center,edge,valid(pattern)?pattern:'#ffffff'];name=name.name||'';}
   const n=String(name||'').toLowerCase();
   const known={
     'black':['#17191f','#343943','#d9dce3'],'electric purple':['#45206f','#a44fe0','#f7d8ff'],'lavender':['#66518d','#c2a9eb','#f8eaff'],
@@ -1347,8 +1348,9 @@ function tgGiftCardArt(gift,attrs={}){
     return '<div class="tg-gift-art tg-plain-gift-art"><img loading="lazy" alt="'+esc(gift.gift_name||'Подарок TopGram')+'" src="'+baseUrl+'" data-asset="'+esc(asset)+'" data-slug="'+esc(slug)+'"></div>';
   }
   const model=attrs.model||'',symbol=attrs.pattern||'',backdrop=attrs.background||'';
-  const palette=tgGiftBackdropPalette(backdrop);
   const pools=gift.upgrade_attributes||{};
+  const backgroundMeta=attrs.background_colors||(pools.background||[]).find(x=>x&&x.name===backdrop);
+  const palette=tgGiftBackdropPalette(backgroundMeta||backdrop);
   const modelMeta=(pools.model||[]).find(x=>x&&x.name===model);
   const patternMeta=(pools.pattern||[]).find(x=>x&&x.name===symbol);
   const validModel=/^[\p{L}\p{N}_-]{1,80}$/u.test(model);
