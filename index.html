@@ -948,7 +948,7 @@ async function tgInspectGiftPack(file){
   }
   return {zip,manifest,gifts};
 }
-async function tgImportGiftPack(pack){
+async function tgImportGiftPack(pack,onlyGiftIndex=null){
   if(!pack?.id)return toast('Не удалось определить набор.');
   const archivePath=pack.archive_path||pack.manifest?.archive_path;
   if(!archivePath)return toast('У набора нет ZIP-архива. Загрузи его заново.');
@@ -962,9 +962,10 @@ async function tgImportGiftPack(pack){
   if(!mf)throw new Error('В ZIP не найден pack.json.');
   const manifest=JSON.parse(await mf.async('string'));
   if(!Array.isArray(manifest.gifts)||!manifest.gifts.length)throw new Error('В pack.json нет подарков.');
+  const giftEntries=onlyGiftIndex===null?manifest.gifts:[manifest.gifts[onlyGiftIndex]];
+  if(!giftEntries.length||!giftEntries[0])throw new Error('Подарок в архиве не найден.');
   const uploaded=new Map(),results=[];
-  for(let i=0;i<manifest.gifts.length;i++){
-    const gift=manifest.gifts[i];
+  for(const gift of giftEntries){
     const pathMap={};
     for(const sourcePath of tgPackAssetPaths(gift)){
       if(!uploaded.has(sourcePath)){
@@ -991,13 +992,38 @@ async function tgImportGiftPack(pack){
   const added=results.filter(x=>!x.skipped).length,skipped=results.length-added;
   toast('Импорт TopGram завершён: добавлено '+added+', уже было в каталоге '+skipped+'.');
 }
+async function tgOpenGiftPackPreview(pack){
+  const archivePath=pack.archive_path||pack.manifest?.archive_path;
+  if(!archivePath)return toast('У набора нет ZIP-архива.');
+  try{
+    const url=TG_SUPABASE_URL+'/storage/v1/object/public/topgram-gift-assets/'+archivePath.split('/').map(encodeURIComponent).join('/');
+    const response=await fetch(url);if(!response.ok)throw new Error('Не удалось загрузить ZIP набора.');
+    const blob=await response.blob();
+    const result=await tgInspectGiftPack(new File([blob],(pack.pack_key||'gift-pack')+'.zip',{type:'application/zip'}));
+    modal('TopGram · '+esc(pack.pack_name),
+      '<div class="tg-admin-form"><p class="tg-admin-hint">Проверь анимации обычных подарков и NFT-вариантов. Можно импортировать весь набор или отдельные подарки.</p>'+
+      '<div id="tgPackPreviewList" class="tg-pack-preview-list"></div><div id="tgPackPreviewCanvas" class="tg-pack-preview-canvas" style="width:100%;height:220px;max-width:320px;margin:12px auto"></div>'+
+      '<div id="tgPackIndividualImports" class="tg-admin-shelf"></div></div>',()=>close(),'Закрыть');
+    $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
+    await tgRenderGiftPackPreviews(result);
+    const actions=$('tgPackIndividualImports');
+    actions.innerHTML=result.manifest.gifts.map((gift,index)=>'<div class="tg-admin-existing"><span><b>'+esc(gift.title)+'</b><small>'+Number(gift.stars).toLocaleString('ru-RU')+' ⭐</small></span><button type="button" data-import-one="'+index+'">Импортировать этот подарок</button></div>').join('');
+    actions.querySelectorAll('[data-import-one]').forEach(btn=>btn.onclick=async()=>{
+      const index=Number(btn.dataset.importOne);btn.disabled=true;
+      try{close();await tgImportGiftPack(pack,index);await tgLoadGiftPackShelf()}
+      catch(error){toast(error.message);btn.disabled=false}
+    });
+    wireTopgramGiftImages($('modalBody'));
+  }catch(error){toast(error.message)}
+}
 async function tgLoadGiftPackShelf(){
   const root=$('tgPackShelf');if(!root)return;
   root.textContent='Загружаем наборы…';
   try{
     const data=await tgGiftApi('list_packs'),packs=data.packs||[];
     if(!packs.length){root.innerHTML='<p class="tg-admin-hint">Полка пуста. Загрузи первый ZIP-набор выше.</p>';return}
-    root.innerHTML=packs.map(p=>'<div class="tg-admin-existing"><span><b>'+esc(p.pack_name)+'</b><small>'+esc(p.pack_key)+' · '+esc(p.status||'draft')+'</small></span><span><button type="button" data-import-pack="'+esc(p.id)+'">Импортировать</button> <button type="button" data-delete-pack="'+esc(p.id)+'">Удалить</button></span></div>').join('');
+    root.innerHTML=packs.map(p=>'<div class="tg-admin-existing"><span><b>'+esc(p.pack_name)+'</b><small>'+esc(p.pack_key)+' · '+esc(p.status||'draft')+'</small></span><span><button type="button" data-preview-pack="'+esc(p.id)+'">Предпросмотр</button> <button type="button" data-import-pack="'+esc(p.id)+'">Импортировать всё</button> <button type="button" data-delete-pack="'+esc(p.id)+'">Удалить</button></span></div>').join('');
+    root.querySelectorAll('[data-preview-pack]').forEach(btn=>btn.onclick=()=>{const pack=packs.find(p=>p.id===btn.dataset.previewPack);if(pack)tgOpenGiftPackPreview(pack)});
     root.querySelectorAll('[data-import-pack]').forEach(btn=>btn.onclick=async()=>{
       btn.disabled=true;
       try{const pack=packs.find(p=>p.id===btn.dataset.importPack);await tgImportGiftPack(pack);await tgLoadGiftPackShelf()}
