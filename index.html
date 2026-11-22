@@ -1055,41 +1055,56 @@ function wireTopgramGiftImages(root){
 function openGiftAdmin(){
   if(!topgramGiftAdmin)return toast('Админ-панель доступна только владельцу TopGram.');
   const gifts=topgramGiftRows.filter(g=>g.gift_type!=='collectible');
-  if(!gifts.length)return toast('Сначала добавь обычные подарки в маркет.');
+  if(!gifts.length)return toast('Сначала импортируй обычные подарки через набор ZIP.');
   const options=gifts.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.gift_name)+'</option>').join('');
-  const current=gifts.map(g=>'<div class="tg-admin-existing"><span>🎁 <b>'+esc(g.gift_name)+'</b></span><small>'+(g.upgrade_enabled?'Улучшение включено · ':'Улучшение выключено · ')+Number(g.upgrade_issued_count||0)+' / '+Number(g.upgrade_total_supply||0)+' NFT</small></div>').join('');
-  modal('Настройка улучшения подарков',
-    '<div class="tg-admin-wrap"><div class="tg-admin-tools"><button type="button" id="tgAdminGrantStars">⭐ Выдать звёзды</button><button type="button" id="tgAdminCollectible">✦ Выдать коллекционный юзернейм</button><button type="button" id="tgAdminStats">📊 Просмотреть статистику</button><button type="button" id="tgAdminPacks">📦 Наборы подарков</button></div>'+
-    '<p class="tg-admin-hint">Пользователь сначала покупает обычный подарок. Только после включения владельцем он сможет улучшить его до NFT. Варианты модели, узора и фона берутся из коллекции подарка.</p>'+
-    '<label for="tgUpgradeGift">Обычный подарок</label><select id="tgUpgradeGift">'+options+'</select>'+
+  const current=gifts.map(g=>'<div class="tg-admin-existing"><span>🎁 <b>'+esc(g.gift_name)+'</b><small>'+(g.is_active?'В каталоге':'Скрыт')+' · '+Number(g.issued_count||0)+' / '+Number(g.total_supply||0)+' продано</small></span><small>'+(g.upgrade_enabled?'NFT включён':'NFT выключен')+' · '+Number(g.upgrade_issued_count||0)+' / '+Number(g.upgrade_total_supply||0)+'</small></div>').join('');
+  modal('TopGram · каталог подарков',
+    '<div class="tg-admin-wrap"><div class="tg-admin-tools"><button type="button" id="tgAdminGrantStars">⭐ Выдать звёзды</button><button type="button" id="tgAdminCollectible">✦ Выдать коллекционный юзернейм</button><button type="button" id="tgAdminStats">📊 Статистика</button><button type="button" id="tgAdminPacks">📦 Наборы подарков</button></div>'+
+    '<p class="tg-admin-hint">Сначала пользователь приобретает обычный подарок. Затем он может улучшить его до NFT по опубликованным правилам выпуска. Каждая публикация NFT создаёт отдельную неизменяемую версию.</p>'+
+    '<label for="tgUpgradeGift">Подарок</label><select id="tgUpgradeGift">'+options+'</select>'+
+    '<div class="tg-admin-section-title">Обычный подарок</div>'+
+    '<label for="tgGiftName">Название</label><input id="tgGiftName" maxlength="120">'+
+    '<label for="tgGiftBasePrice">Цена покупки в Stars</label><input id="tgGiftBasePrice" type="number" min="1" max="1000000000" inputmode="numeric">'+
+    '<label for="tgGiftBaseSupply">Тираж обычных подарков</label><input id="tgGiftBaseSupply" type="number" min="1" max="1000000000" inputmode="numeric">'+
+    '<label class="tg-upgrade-enabled-label"><input id="tgGiftActive" type="checkbox"> Показывать подарок в каталоге</label>'+
+    '<div class="tg-admin-section-title">NFT-улучшение</div>'+
     '<label for="tgUpgradePrice">Цена улучшения в Stars</label><input id="tgUpgradePrice" type="number" min="1" max="1000000000" value="25" inputmode="numeric">'+
-    '<label for="tgUpgradeSupply">Тираж NFT-улучшений</label><input id="tgUpgradeSupply" type="number" min="1" max="1000000" value="100" inputmode="numeric">'+
+    '<label for="tgUpgradeSupply">Тираж NFT-версии</label><input id="tgUpgradeSupply" type="number" min="1" max="1000000" value="100" inputmode="numeric">'+
     '<label class="tg-upgrade-enabled-label"><input id="tgUpgradeEnabled" type="checkbox"> Разрешить улучшение этого подарка</label>'+
     '<div id="tgUpgradeAttributeSummary" class="tg-admin-hint">Загружаем модели, узоры и фоны…</div>'+
-    '<div class="tg-admin-section-title">Состояние подарков</div>'+current+'</div>',
+    '<div class="tg-admin-section-title">Состояние каталога</div>'+current+'</div>',
     async()=>{
       const gift=gifts.find(x=>x.id===$('tgUpgradeGift').value);if(!gift)return toast('Выбери подарок.');
+      const basePrice=Number($('tgGiftBasePrice').value),baseSupply=Number($('tgGiftBaseSupply').value);
       const price=Number($('tgUpgradePrice').value),supply=Number($('tgUpgradeSupply').value);
-      if(!Number.isSafeInteger(price)||price<1)return toast('Укажи стоимость улучшения от 1 звезды.');
+      if(!Number.isSafeInteger(basePrice)||basePrice<1)return toast('Цена обычного подарка должна быть не меньше 1 звезды.');
+      if(!Number.isSafeInteger(baseSupply)||baseSupply<Number(gift.issued_count||0))return toast('Тираж не может быть меньше уже проданных подарков.');
+      if(!Number.isSafeInteger(price)||price<1)return toast('Укажи стоимость NFT-улучшения от 1 звезды.');
       if(!Number.isSafeInteger(supply)||supply<1)return toast('Укажи тираж NFT от 1 экземпляра.');
       const attributes=gift._upgradeAttributes;
-      if(!attributes||!['model','pattern','background'].every(k=>Array.isArray(attributes[k])&&attributes[k].length))return toast('Не удалось загрузить параметры NFT для этого подарка.');
+      if($('tgUpgradeEnabled').checked&&(!attributes||!['model','pattern','background'].every(k=>Array.isArray(attributes[k])&&attributes[k].length>=2)))return toast('Для NFT нужны минимум два варианта модели, узора и фона.');
       $('confirmModal').disabled=true;
       try{
-        await tgGiftRpc('topgram_admin_publish_gift_version',{p_admin_id:tgCurrentUserId(),p_gift_id:gift.id,p_upgrade_enabled:$('tgUpgradeEnabled').checked,p_upgrade_price_stars:price,p_upgrade_total_supply:supply,p_attributes:attributes});
-        await loadTopgramGiftAdmin();close();toast('Настройки улучшения сохранены.');openGiftAdmin();
+        await tgGiftRpc('topgram_admin_update_gift_catalog',{p_admin_id:tgCurrentUserId(),p_gift_id:gift.id,p_gift_name:$('tgGiftName').value.trim(),p_price_stars:basePrice,p_total_supply:baseSupply,p_is_active:$('tgGiftActive').checked});
+        if(attributes&&['model','pattern','background'].every(k=>Array.isArray(attributes[k])&&attributes[k].length>=2)){
+          await tgGiftRpc('topgram_admin_publish_gift_version',{p_admin_id:tgCurrentUserId(),p_gift_id:gift.id,p_upgrade_enabled:$('tgUpgradeEnabled').checked,p_upgrade_price_stars:price,p_upgrade_total_supply:supply,p_attributes:attributes});
+        }else if($('tgUpgradeEnabled').checked)throw new Error('Не удалось загрузить параметры NFT.');
+        await loadTopgramGiftAdmin();close();toast('Каталог TopGram обновлён.');openGiftAdmin();
       }catch(error){toast(error.message);$('confirmModal').disabled=false}
-    },'Сохранить настройки');
+    },'Сохранить изменения');
   $('confirmModal').disabled=false;
   $('tgAdminGrantStars').onclick=openAdminGrantStars;$('tgAdminCollectible').onclick=openAdminCollectible;$('tgAdminStats').onclick=openAdminStats;$('tgAdminPacks').onclick=openGiftPacksAdmin;
   const fill=async()=>{
     const gift=gifts.find(x=>x.id===$('tgUpgradeGift').value)||gifts[0];
+    $('tgGiftName').value=gift.gift_name||'';
+    $('tgGiftBasePrice').value=Number(gift.price_stars||1);
+    $('tgGiftBaseSupply').value=Number(gift.total_supply||1000000000);
+    $('tgGiftActive').checked=!!gift.is_active;
     $('tgUpgradePrice').value=Number(gift.upgrade_price_stars||25);
     $('tgUpgradeSupply').value=Number(gift.upgrade_total_supply||100);
     $('tgUpgradeEnabled').checked=!!gift.upgrade_enabled;
     try{
-      const loaded=await tgGiftLoadAttributes(gift);
-      const configured=gift.upgrade_attributes||{};
+      const loaded=await tgGiftLoadAttributes(gift),configured=gift.upgrade_attributes||{};
       gift._upgradeAttributes={};
       for(const key of ['model','pattern','background']){
         const saved=Array.isArray(configured[key])&&configured[key].length?configured[key]:loaded[key];
@@ -1100,6 +1115,7 @@ function openGiftAdmin(){
   };
   $('tgUpgradeGift').onchange=fill;fill();
 }
+
 function openAdminGrantStars(){
   modal('Выдать звёзды','<div class="tg-admin-form"><label for="tgGrantUsername">Обычный юзернейм пользователя</label><input id="tgGrantUsername" maxlength="25" placeholder="@username" autocapitalize="none"><label for="tgGrantAmount">Количество звёзд</label><input id="tgGrantAmount" type="number" min="1" max="1000000000" step="1" value="500" inputmode="numeric"><p class="tg-admin-hint">Звёзды будут добавлены к текущему балансу выбранного аккаунта.</p></div>',async()=>{
     const username=$('tgGrantUsername').value.trim().replace(/^@/,'').toLowerCase(),amount=Number($('tgGrantAmount').value);
