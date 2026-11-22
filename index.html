@@ -503,6 +503,18 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 .tg-upgrade-reel b{font-size:12px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tg-upgrade-reels.tg-spinning .tg-upgrade-reel b{animation:tgReelSpin .18s linear infinite}
 @keyframes tgReelSpin{0%{transform:translateY(-5px);filter:blur(2px);opacity:.45}50%{transform:translateY(5px);filter:blur(1px);opacity:.8}100%{transform:translateY(-5px);filter:blur(2px);opacity:.45}}
+
+.tg-admin-tools{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:16px}
+.tg-admin-tools button{width:100%;min-height:44px;border:1px solid #40566b;border-radius:12px;background:#263746;color:#f5f8fb;text-align:left;padding:10px 13px;font:inherit;font-weight:650}
+.tg-admin-form{display:flex;flex-direction:column;gap:9px}
+.tg-admin-form input{width:100%;height:46px;padding:0 12px;border:1px solid #3b5063;border-radius:11px;background:#263746;color:#fff;font:inherit}
+.tg-stats-total{display:flex;flex-direction:column;gap:5px;background:#263746;border-radius:14px;padding:15px;margin-bottom:13px}
+.tg-stats-total small{color:#aab8c5;font-size:13px}
+.tg-stats-total strong{font-size:30px;color:#fff}
+.tg-stats-table-scroll{overflow:auto;max-height:55vh;border-radius:12px}
+.tg-stats-table{border-collapse:collapse;min-width:680px;width:100%;font-size:12px}
+.tg-stats-table th,.tg-stats-table td{padding:10px 9px;border-bottom:1px solid #3b4a58;text-align:left;white-space:nowrap}
+.tg-stats-table th{position:sticky;top:0;background:#263746;color:#aebdca}
 </style>
 </head>
 <body>
@@ -783,27 +795,51 @@ function openGiftAdmin(){
   const library=giftDesignLibrary();
   const options=library.collections.map(name=>'<option value="'+esc(name)+'">'+esc(name)+'</option>').join('');
   const current=topgramGiftRows.map(g=>'<div class="tg-admin-existing"><span>🎁 <b>'+esc(g.gift_name)+'</b></span><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐ · осталось '+Math.max(0,Number(g.total_supply)-Number(g.issued_count))+' из '+Number(g.total_supply)+'</small></div>').join('');
-  modal('Админ-панель подарков',
-    '<div class="tg-admin-wrap"><p class="tg-admin-hint">Выпуск обычного подарка TopGram. Укажи стоимость и общий тираж.</p>'+
+  modal('Админ-панель',
+    '<div class="tg-admin-wrap"><div class="tg-admin-tools"><button type="button" id="tgAdminGrantStars">⭐ Выдать звёзды</button><button type="button" id="tgAdminCollectible">✦ Выдать коллекционный юзернейм</button><button type="button" id="tgAdminStats">📊 Просмотреть статистику</button></div><p class="tg-admin-hint">Выпуск обычного подарка TopGram. Укажи стоимость и общий тираж.</p>'+
     '<label for="tgGiftDesign">Дизайн подарка</label><select id="tgGiftDesign">'+options+'</select>'+
     '<label for="tgGiftPrice">Стоимость в звёздах</label><input id="tgGiftPrice" type="number" min="1" max="1000000000" step="1" value="100" inputmode="numeric">'+
     '<label for="tgGiftSupply">Тираж (сколько выпустить)</label><input id="tgGiftSupply" type="number" min="1" max="1000000" step="1" value="100" inputmode="numeric">'+
     '<div class="tg-admin-section-title">Уже выпущенные подарки</div>'+(current||'<p class="tg-admin-empty">Пока ничего не выпущено.</p>')+'</div>',
     async()=>{
-      const name=$('tgGiftDesign').value;
-      const price=Number($('tgGiftPrice').value);
-      const supply=Number($('tgGiftSupply').value);
+      const name=$('tgGiftDesign').value,price=Number($('tgGiftPrice').value),supply=Number($('tgGiftSupply').value);
       if(!Number.isSafeInteger(price)||price<1)return toast('Укажи стоимость от 1 звезды.');
       if(!Number.isSafeInteger(supply)||supply<1)return toast('Укажи тираж от 1 экземпляра.');
       $('confirmModal').disabled=true;
-      try{
-        const gift=await tgGiftApi('mint',{gift_name:name,gift_key:library.slug(name),asset_key:library.assetName(name),price_stars:price,total_supply:supply});
-        topgramGiftRows.unshift(gift.gift);
-        close();
-        toast('Подарок выпущен и добавлен в каталог.');
-      }catch(error){toast(error.message);$('confirmModal').disabled=false}
+      try{const gift=await tgGiftApi('mint',{gift_name:name,gift_key:library.slug(name),asset_key:library.assetName(name),price_stars:price,total_supply:supply});topgramGiftRows.unshift(gift.gift);close();toast('Подарок выпущен и добавлен в каталог.')}
+      catch(error){toast(error.message);$('confirmModal').disabled=false}
     },'Выпустить подарок');
   $('confirmModal').disabled=false;
+  $('tgAdminGrantStars').onclick=openAdminGrantStars;
+  $('tgAdminCollectible').onclick=openAdminCollectible;
+  $('tgAdminStats').onclick=openAdminStats;
+}
+function openAdminGrantStars(){
+  modal('Выдать звёзды','<div class="tg-admin-form"><label for="tgGrantUsername">Обычный юзернейм пользователя</label><input id="tgGrantUsername" maxlength="25" placeholder="@username" autocapitalize="none"><label for="tgGrantAmount">Количество звёзд</label><input id="tgGrantAmount" type="number" min="1" max="1000000000" step="1" value="500" inputmode="numeric"><p class="tg-admin-hint">Звёзды будут добавлены к текущему балансу выбранного аккаунта.</p></div>',async()=>{
+    const username=$('tgGrantUsername').value.trim().replace(/^@/,'').toLowerCase(),amount=Number($('tgGrantAmount').value);
+    if(!/^[a-z0-9_]{5,24}$/.test(username))return toast('Проверь обычный юзернейм.');
+    if(!Number.isSafeInteger(amount)||amount<1||amount>1000000000)return toast('Укажи количество от 1 до 1 000 000 000.');
+    $('confirmModal').disabled=true;
+    try{const r=await tgGiftApi('grant_stars',{username,amount});close();toast('Начислено '+r.result.stars_added.toLocaleString('ru-RU')+' ⭐ пользователю @'+r.result.username+'. Баланс: '+r.result.balance.toLocaleString('ru-RU')+' ⭐')}
+    catch(e){toast(e.message);$('confirmModal').disabled=false}
+  },'Выдать звёзды');
+}
+function openAdminCollectible(){
+  modal('Выдать коллекционный юзернейм','<div class="tg-admin-form"><label for="tgCollectTarget">Обычный юзернейм пользователя</label><input id="tgCollectTarget" maxlength="25" placeholder="@username" autocapitalize="none"><label for="tgCollectValue">Коллекционный юзернейм</label><input id="tgCollectValue" maxlength="33" placeholder="rare_username" autocapitalize="none"><p class="tg-admin-hint">Обычный юзернейм останется у пользователя. Коллекционный будет отдельным закреплённым именем.</p></div>',async()=>{
+    const username=$('tgCollectTarget').value.trim().replace(/^@/,'').toLowerCase(),collectible=$('tgCollectValue').value.trim().replace(/^@/,'').toLowerCase();
+    if(!/^[a-z0-9_]{5,24}$/.test(username))return toast('Проверь обычный юзернейм.');
+    if(!/^[a-z0-9_]{5,32}$/.test(collectible))return toast('Коллекционное имя: 5–32 символа, латиница, цифры и _.');
+    $('confirmModal').disabled=true;
+    try{const r=await tgGiftApi('assign_collectible_username',{username,collectible_username:collectible});close();toast('Коллекционный юзернейм @'+r.result.collectible_username+' выдан пользователю @'+r.result.username)}
+    catch(e){toast(e.message);$('confirmModal').disabled=false}
+  },'Выдать коллекционный юзернейм');
+}
+async function openAdminStats(){
+  try{
+    const data=await tgGiftApi('stats'),stats=data.stats||{},users=stats.users||[];
+    const rows=users.map(u=>'<tr><td>@'+esc(u.username||'—')+'</td><td>'+(u.collectible_username?'@'+esc(u.collectible_username):'—')+'</td><td>'+Number(u.stars||0).toLocaleString('ru-RU')+' ⭐</td><td>'+esc(u.number||'—')+'</td><td>'+esc(u.display_name||'—')+'</td><td>'+((u.created_at&&new Date(u.created_at).toLocaleDateString('ru-RU'))||'—')+'</td></tr>').join('');
+    modal('Статистика TopGram','<div class="tg-stats-wrap"><div class="tg-stats-total"><small>Всего зарегистрировано пользователей</small><strong>'+Number(stats.total_users||users.length).toLocaleString('ru-RU')+'</strong></div><div class="tg-stats-table-scroll"><table class="tg-stats-table"><thead><tr><th>Юзернейм</th><th>Коллекционный</th><th>Баланс</th><th>Номер</th><th>Имя</th><th>Регистрация</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6">Пока нет пользователей</td></tr>')+'</tbody></table></div></div>',close,'Закрыть');
+  }catch(e){toast(e.message)}
 }
 
 const tgGiftUpgradeOptions={
@@ -956,7 +992,7 @@ $('accountSave').onclick=()=>{const first=$('accountFirst').value.trim(),last=$(
 $('accountPhone').onclick=()=>modal('Номер TopGram','<p>К твоему аккаунту привязан номер: <strong>'+esc(displayPhone(profileData.phone)||'не найден')+'</strong>.</p><p>Это отображаемый идентификатор TopGram. Для входа используется защищённая привязка аккаунта; это не номер для звонков или SMS.</p>',close,'Понятно');
 function usernameCheck(raw){const v=raw.trim().replace(/^@/,'').toLowerCase();if(!v)return {state:'',message:''};if(!/^[a-z0-9_]+$/.test(v))return {state:'invalid',message:'Такое имя пользователя недоступно.'};if(v.length<5)return {state:'invalid',message:'Имя пользователя должно содержать не меньше 5 символов.'};if(v.length>24)return {state:'invalid',message:'Имя пользователя должно содержать не больше 24 символов.'};const reserved=['admin','administrator','support','telegram','topgram','top_gram','root','help','settings'];if(reserved.includes(v))return {state:'invalid',message:'Такое имя пользователя недоступно.'};const demoTaken=['gsidp'];if(demoTaken.includes(v))return {state:'invalid',message:'Это имя пользователя уже занято.'};return {state:'available',message:'Имя пользователя '+v+' свободно.'}}
 function updateUsernameStatus(){const result=usernameCheck($('usernameInput').value),el=$('usernameStatus');el.textContent=result.message;el.className='username-status'+(result.state?' visible '+result.state:'')}
-$('accountUsername').onclick=()=>{$('usernameInput').value=profileData.username||'';updateUsernameStatus();$('app').classList.add('username-open');$('usernameInput').focus()};$('usernameBack').onclick=()=>{$('app').classList.remove('username-open')};$('usernameSave').onclick=()=>{const v=$('usernameInput').value.trim().replace(/^@/,'').toLowerCase();const result=usernameCheck(v);if(!v){profileData.username='';saveProfile();$('accountUsernameText').textContent='Добавить имя пользователя';$('app').classList.remove('username-open');renderProfile();toast('Имя пользователя удалено');return}if(result.state!=='available'){updateUsernameStatus();return}profileData.username=v;saveProfile();$('accountUsernameText').textContent='@'+v;$('app').classList.remove('username-open');renderProfile();toast('Имя пользователя сохранено')};$('usernameInput').oninput=updateUsernameStatus;
+$('accountUsername').onclick=()=>{$('usernameInput').value=profileData.username||'';updateUsernameStatus();$('app').classList.add('username-open');$('usernameInput').focus()};$('usernameBack').onclick=()=>{$('app').classList.remove('username-open')};$('usernameSave').onclick=async()=>{const v=$('usernameInput').value.trim().replace(/^@/,'').toLowerCase();const result=usernameCheck(v);if(v&&result.state!=='available'){updateUsernameStatus();return}try{await tgGiftApi('save_username',{username:v});profileData.username=v;saveProfile();$('accountUsernameText').textContent=v?'@'+v:'Добавить имя пользователя';$('app').classList.remove('username-open');renderProfile();toast(v?'Имя пользователя сохранено':'Имя пользователя удалено')}catch(error){toast(error.message)}};$('usernameInput').oninput=updateUsernameStatus;
 function birthdayPickerMarkup(){return '<div class="birthday-wheel-wrap"><div class="birthday-wheel-fade top"></div><div class="birthday-wheel-highlight"></div><div class="birthday-wheel" id="birthdayDayWheel" aria-label="День"></div><div class="birthday-wheel" id="birthdayMonthWheel" aria-label="Месяц"></div><div class="birthday-wheel" id="birthdayYearWheel" aria-label="Год"></div><div class="birthday-wheel-fade bottom"></div></div>'}
 const birthdayMonths=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 let birthdayParts={day:1,month:1,year:2000};
