@@ -744,6 +744,27 @@ $('addPost').onclick=()=>modal('Новая публикация','<label for="po
 
 function profile(c){modal('Действия чата','<div class="chat-action-sheet"><button type="button" data-chat-action="profile">Открыть профиль</button><button type="button" data-chat-action="mute">'+(c.muted?'Включить уведомления':'Отключить уведомления')+'</button><button type="button" data-chat-action="clear">Очистить историю</button><button type="button" data-chat-action="delete" class="danger">Удалить чат</button></div>',close,'Закрыть');document.querySelectorAll('[data-chat-action]').forEach(b=>b.onclick=()=>{const action=b.dataset.chatAction;if(action==='profile'){modal('Профиль','<div style="text-align:center"><div class="avatar" style="margin:0 auto 12px">'+esc(initials(c.name))+'</div><strong>'+esc(c.name)+'</strong><p style="color:#8292a2">'+esc(c.handle||'TopGram')+'</p></div>',close,'Готово')}else if(action==='mute'){c.muted=!c.muted;save();close();toast(c.muted?'Уведомления отключены':'Уведомления включены')}else if(action==='clear'){modal('Очистить историю?','<p>Все сообщения в этом диалоге будут удалены с этого устройства.</p>',()=>{c.messages=[];c.last='';c.time='';c.updated=Date.now();save();close();select(c.id);toast('История очищена')},'Очистить')}else if(action==='delete'){modal('Удалить чат?','<p>Диалог и его сообщения будут удалены с этого устройства.</p>',()=>{chats=chats.filter(x=>x.id!==c.id);save();close();$('app').classList.remove('open-chat');activeId=null;render();toast('Чат удалён')},'Удалить')}})}
 
+
+async function tgLoadPublicDisplayNumber(){
+  const session=tgAuthSavedSession();
+  const userId=session?.user?.id;
+  if(!userId)return;
+  try{
+    const url=TG_SUPABASE_URL+'/rest/v1/topgram_public_profiles?select=display_number&id=eq.'+encodeURIComponent(userId)+'&limit=1';
+    const response=await fetch(url,{headers:{'apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token}});
+    if(!response.ok)throw new Error('Не удалось загрузить отображаемый номер: '+response.status);
+    const rows=await response.json();
+    if(Array.isArray(rows)&&rows[0]?.display_number){
+      profileData.phone=rows[0].display_number;
+      saveProfile();
+      renderProfile();
+      if($('settingsPhone'))$('settingsPhone').textContent=displayPhone(profileData.phone);
+      if($('accountPhoneText'))$('accountPhoneText').textContent=displayPhone(profileData.phone);
+    }
+  }catch(error){console.warn('TopGram display number:',error)}
+}
+
+tgLoadPublicDisplayNumber();
 render();save();renderProfile();
 })();
 </script></body>
