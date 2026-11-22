@@ -495,7 +495,7 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 .profile-gift-card b{display:block;font-size:13px;margin:8px 0 4px}
 .profile-gift-card small{display:block;color:#a8b6c4;font-size:11px}
 .profile-gift-card button{margin-top:8px;border:0;border-radius:10px;background:#2aabee;color:white;padding:8px 12px;font-size:12px}
-.profile-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+.profile-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
 </style>
 </head>
 <body>
@@ -734,12 +734,11 @@ async function tgGiftApi(action,payload={}){
 }
 function ensureGiftAdminButton(){
   const giftButton=$('settingGift');
-  const group=giftButton?.closest('.settings-group');
-  if(!group||$('settingGiftAdmin'))return;
+  if(!giftButton||$('settingGiftAdmin'))return;
   const button=document.createElement('button');
   button.type='button';button.className='settings-row';button.id='settingGiftAdmin';
-  button.innerHTML='<span class="settings-icon purple">⚙</span><span><strong>Админ-панель подарков</strong><small>Выпуск, стоимость и тираж</small></span>';
-  group.insertBefore(button,giftButton);
+  button.innerHTML='<span class="settings-icon purple">⚙</span><span><strong>Админ-панель</strong><small>Выпуск подарков, цены и тираж</small></span>';
+  giftButton.parentElement.insertBefore(button,giftButton);
   button.onclick=openGiftAdmin;
 }
 async function loadTopgramGiftAdmin(){
@@ -861,7 +860,7 @@ async function openGiftInventory(){
 }
 function openGiftUpgrade(item){
   const gift=item.gift||{},attrs=item.attributes||{};
-  const optionMarkup=key=>tgGiftUpgradeOptions[key].values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+  const optionMarkup=key=>tgGiftUpgradeOptions[key].values.map((v,i)=>'<option value="'+esc(v)+'"'+(attrs[key]===v?' selected':'')+'>'+esc(v)+'</option>').join('');
   const body='<div class="tg-upgrade-screen"><div class="tg-upgrade-stage" id="tgUpgradeStage">'+tgGiftCardArt(gift)+'</div><h3>'+esc(gift.gift_name||'Подарок')+'</h3><p class="tg-upgrade-subtitle">Все три характеристики улучшаются одновременно</p><div class="tg-current-attributes"><span>Сейчас: '+esc(attrs.model||'Классическая')+' · '+esc(attrs.pattern||'Без узора')+' · '+esc(attrs.background||'Стандартный')+'</span></div><label for="tgUpgradeModel">🎁 Модель · 120 ⭐</label><select id="tgUpgradeModel">'+optionMarkup('model')+'</select><label for="tgUpgradePattern">✦ Узор · 60 ⭐</label><select id="tgUpgradePattern">'+optionMarkup('pattern')+'</select><label for="tgUpgradeBackground">🎨 Фон · 90 ⭐</label><select id="tgUpgradeBackground">'+optionMarkup('background')+'</select><div class="tg-upgrade-cost" id="tgUpgradeCost">Стоимость: 270 ⭐</div><p class="tg-upgrade-disclosure">Выбери все три результата заранее. После нажатия они одновременно прокрутятся и применятся. Итог и стоимость видны до подтверждения.</p></div>';
   modal('Улучшение подарка',body,async()=>{
     const attributes={model:$('tgUpgradeModel').value,pattern:$('tgUpgradePattern').value,background:$('tgUpgradeBackground').value};
