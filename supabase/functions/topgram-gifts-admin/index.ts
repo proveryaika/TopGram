@@ -56,6 +56,17 @@ Deno.serve(async (req: Request) => {
       if (error) return reply({ error: error.message || "Покупка не выполнена" }, 400);
       return reply({ success: true, purchase: data });
     }
+    if (action === "upgrade_bundle") {
+      const inventoryId = String(body.inventory_id || "");
+      const attributes = body.attributes;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(inventoryId))
+        return reply({ error: "Подарок не найден" }, 400);
+      const { data, error } = await adminDb.rpc("topgram_upgrade_gift_bundle", {
+        p_user_id: userId, p_inventory_id: inventoryId, p_attributes: attributes
+      });
+      if (error) return reply({ error: error.message || "Улучшение не выполнено" }, 400);
+      return reply({ success: true, upgrade: data });
+    }
     if (action === "upgrade") {
       const inventoryId = String(body.inventory_id || "");
       const attribute = String(body.attribute || "");
