@@ -433,7 +433,7 @@ body.tg-auth-active{overflow:hidden}
       <h2 class="tg-auth-step-title">Ваш номер</h2>
       <p class="tg-auth-step-description">Введите постоянный виртуальный номер, который вы получили в боте TopGram.</p>
       <label class="tg-auth-label" for="tgAuthNumber">Номер TopGram</label>
-      <div class="tg-auth-country"><select class="tg-auth-input" id="tgAuthPrefix" aria-label="Код страны"><option value="7">+7</option><option value="1">+1</option></select><input class="tg-auth-input" id="tgAuthNumber" inputmode="numeric" autocomplete="tel" placeholder="777 777 77 77" maxlength="14"></div>
+      <div class="tg-auth-country"><select class="tg-auth-input" id="tgAuthPrefix" aria-label="Код страны"><option value="7">+7</option><option value="1">+1</option><option value="888">+888</option></select><input class="tg-auth-input" id="tgAuthNumber" inputmode="numeric" autocomplete="tel" placeholder="777 777 77 77" maxlength="14"></div>
       <button class="tg-auth-btn" id="tgAuthSend">Получить код</button><button class="tg-auth-back" id="tgAuthPhoneBack">Назад</button>
     </div>
     <div id="tgAuthCode" hidden>
@@ -522,15 +522,18 @@ const TG_SUPABASE_ANON_KEY='sb_publishable_pp3XYhl58wR47f_IURaVbg_-y87sM3B';
 const tgAuthSessionKey='topgram-auth-session';
 const tgAuth=$('tgAuth');
 let tgAuthNumber='';
-function tgAuthDigits(){return ( $('tgAuthPrefix').value + $('tgAuthNumber').value.replace(/\\D/g,'') ).slice(0,11)}
-function tgAuthShow(step){$('tgAuthWelcome').hidden=step!=='welcome';$('tgAuthPhone').hidden=step!=='phone';$('tgAuthCode').hidden=step!=='code';$('tgAuthError').textContent='';$('tgAuthCopy').textContent=step==='welcome'?'Общайтесь и оставайтесь на связи. Войдите в свой аккаунт TopGram.':step==='phone'?'Войдите по постоянному виртуальному номеру TopGram.':'Подтвердите вход с помощью кода из Telegram-бота TopGram.';if(step==='code')$('tgAuthCodeNumber').textContent='+'+tgAuthNumber.slice(0,1)+' '+tgAuthNumber.slice(1)}
+function tgAuthDigits(){return $('tgAuthPrefix').value + $('tgAuthNumber').value.replace(/\\D/g,'')}
+function tgAuthCanonicalNumber(){const raw=tgAuthDigits();if(raw==='88888888')return '79228093238';return raw}
+function tgAuthDisplayNumber(){return $('tgAuthPrefix').value==='888'?'+888 8888':'+'+tgAuthNumber.slice(0,1)+' '+tgAuthNumber.slice(1)}
+function tgAuthShow(step){$('tgAuthWelcome').hidden=step!=='welcome';$('tgAuthPhone').hidden=step!=='phone';$('tgAuthCode').hidden=step!=='code';$('tgAuthError').textContent='';$('tgAuthCopy').textContent=step==='welcome'?'Общайтесь и оставайтесь на связи. Войдите в свой аккаунт TopGram.':step==='phone'?'Войдите по постоянному виртуальному номеру TopGram.':'Подтвердите вход с помощью кода из Telegram-бота TopGram.';if(step==='code')$('tgAuthCodeNumber').textContent=tgAuthDisplayNumber()}
 function tgAuthEnter(){tgAuth.hidden=true;document.body.classList.remove('tg-auth-active')}
 function tgAuthSavedSession(){try{const x=JSON.parse(localStorage.getItem(tgAuthSessionKey)||'null');return x&&x.access_token&&x.expires_at>Date.now()/1000+30?x:null}catch{return null}}
 if(tgAuth){document.body.classList.add('tg-auth-active');if(tgAuthSavedSession())tgAuthEnter();else tgAuthShow('welcome')}
 $('tgAuthStart').onclick=()=>tgAuthShow('phone');
 $('tgAuthPhoneBack').onclick=()=>tgAuthShow('welcome');
 $('tgAuthCodeBack').onclick=()=>tgAuthShow('phone');
-$('tgAuthNumber').addEventListener('input',()=>{$('tgAuthNumber').value=$('tgAuthNumber').value.replace(/[^0-9 ]/g,'').slice(0,14)});
+$('tgAuthPrefix').addEventListener('change',()=>{const alias=$('tgAuthPrefix').value==='888';$('tgAuthNumber').value=alias?'8888':'';$('tgAuthNumber').placeholder=alias?'8888':'777 777 77 77';$('tgAuthNumber').maxLength=alias?4:14});
+$('tgAuthNumber').addEventListener('input',()=>{$('tgAuthNumber').value=$('tgAuthNumber').value.replace(/[^0-9 ]/g,'').slice(0,$('tgAuthPrefix').value==='888'?4:14)});
 async function tgAuthCall(name,payload){if(!TG_SUPABASE_ANON_KEY||TG_SUPABASE_ANON_KEY.includes('PASTE_'))throw new Error('Нужно добавить публичный ключ Supabase в настройки TopGram.');const response=await fetch(TG_SUPABASE_URL+'/functions/v1/'+name,{method:'POST',headers:{'Content-Type':'application/json','apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+TG_SUPABASE_ANON_KEY},body:JSON.stringify(payload)});let data={};try{data=await response.json()}catch{}if(!response.ok)throw new Error(data.message||data.error||'Ошибка сервера. Попробуй позже.');return data}
 
 async function tgAuthSyncProfile(){
@@ -560,7 +563,7 @@ async function tgAuthSyncProfile(){
 }
 if(tgAuthSavedSession())tgAuthSyncProfile();
 
-$('tgAuthSend').onclick=async()=>{const digits=tgAuthDigits();if(!/^([17])[0-9]{10}$/.test(digits))return $('tgAuthError').textContent='Проверь номер: нужно 10 цифр после кода страны.';tgAuthNumber=digits;$('tgAuthSend').disabled=true;$('tgAuthSend').textContent='Отправляем…';try{await tgAuthCall('request-login-code',{number:digits});tgAuthShow('code');$('tgAuthOtp').focus()}catch(e){$('tgAuthError').textContent=e.message}finally{$('tgAuthSend').disabled=false;$('tgAuthSend').textContent='Получить код'}};
+$('tgAuthSend').onclick=async()=>{const entered=tgAuthDigits();if($('tgAuthPrefix').value==='888'&&entered!=='88888888')return $('tgAuthError').textContent='Для номера +888 доступен идентификатор 8888.';if($('tgAuthPrefix').value!=='888'&&!/^([17])[0-9]{10}$/.test(entered))return $('tgAuthError').textContent='Проверь номер: нужно 10 цифр после кода страны.';const digits=tgAuthCanonicalNumber();tgAuthNumber=digits;$('tgAuthSend').disabled=true;$('tgAuthSend').textContent='Отправляем…';try{await tgAuthCall('request-login-code',{number:digits});tgAuthShow('code');$('tgAuthOtp').focus()}catch(e){$('tgAuthError').textContent=e.message}finally{$('tgAuthSend').disabled=false;$('tgAuthSend').textContent='Получить код'}};
 $('tgAuthOtp').addEventListener('input',()=>{$('tgAuthOtp').value=$('tgAuthOtp').value.replace(/\D/g,'').slice(0,6)});
 $('tgAuthVerify').onclick=async()=>{const code=$('tgAuthOtp').value.trim();if(!/^\d{6}$/.test(code))return $('tgAuthError').textContent='Введи шестизначный код.';$('tgAuthVerify').disabled=true;$('tgAuthVerify').textContent='Проверяем…';try{const data=await tgAuthCall('verify-login-code',{number:tgAuthNumber,code});if(!data.session)throw new Error(data.error||'Сервер не вернул сессию.');localStorage.setItem(tgAuthSessionKey,JSON.stringify(data.session));localStorage.setItem('topgram-linked-number','+'+tgAuthNumber.slice(0,1)+' '+tgAuthNumber.slice(1));profileData.phone='+'+tgAuthNumber.slice(0,1)+' '+tgAuthNumber.slice(1);saveProfile();tgAuthEnter()}catch(e){$('tgAuthError').textContent=e.message}finally{$('tgAuthVerify').disabled=false;$('tgAuthVerify').textContent='Продолжить'}};
 
