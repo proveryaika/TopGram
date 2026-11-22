@@ -443,6 +443,23 @@ body.light .stars-page-head{border-color:#00000012}
 body.light .stars-page-back{color:#17212b}
 body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#536575}
 
+
+.tg-admin-wrap{display:flex;flex-direction:column;gap:10px;padding:4px 0 10px}
+.tg-admin-hint,.tg-admin-empty{color:#91a0ad;font-size:14px;line-height:1.45;margin:0 0 8px}
+.tg-admin-wrap label{font-size:14px;color:#b7c5d2;margin-top:5px}
+.tg-admin-wrap input,.tg-admin-wrap select{width:100%;min-height:48px;border:1px solid #34485a;border-radius:12px;background:#263746;color:#f5f7fa;padding:10px 13px}
+.tg-admin-section-title{font-weight:650;margin-top:18px;padding-top:14px;border-top:1px solid #ffffff14}
+.tg-admin-existing{display:flex;flex-direction:column;gap:3px;padding:11px 0;border-bottom:1px solid #ffffff12}
+.tg-admin-existing small{color:#9aa8b5}
+.tg-market-catalog{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tg-market-gift{min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 8px}
+.tg-market-gift b{font-size:14px;text-align:center}
+.tg-market-gift small{font-size:12px;color:#a8b6c4;text-align:center}
+.tg-market-gift.selected{border:2px solid #2aabee;background:#1b3a50}
+.tg-gift-art{width:78px;height:78px;border-radius:18px;background:linear-gradient(145deg,#31536c,#1c2c3b);display:grid;place-items:center;position:relative;overflow:hidden}
+.tg-gift-art>span{font-size:42px;line-height:1}
+.tg-gift-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+
 </style>
 </head>
 <body>
@@ -607,7 +624,7 @@ if(tgAuthSavedSession())tgAuthSyncProfile();
 
 $('tgAuthSend').onclick=async()=>{const entered=tgAuthDigits();if($('tgAuthPrefix').value==='888'&&entered!=='8888888')return $('tgAuthError').textContent='Для номера +888 доступен идентификатор 8888.';if($('tgAuthPrefix').value!=='888'&&!/^([17])[0-9]{10}$/.test(entered))return $('tgAuthError').textContent='Проверь номер: нужно 10 цифр после кода страны.';const digits=tgAuthCanonicalNumber();tgAuthNumber=digits;$('tgAuthSend').disabled=true;$('tgAuthSend').textContent='Отправляем…';try{await tgAuthCall('request-login-code',{number:digits});tgAuthShow('code');$('tgAuthOtp').focus()}catch(e){$('tgAuthError').textContent=e.message}finally{$('tgAuthSend').disabled=false;$('tgAuthSend').textContent='Получить код'}};
 $('tgAuthOtp').addEventListener('input',()=>{$('tgAuthOtp').value=$('tgAuthOtp').value.replace(/\D/g,'').slice(0,6)});
-$('tgAuthVerify').onclick=async()=>{const code=$('tgAuthOtp').value.trim();if(!/^\d{6}$/.test(code))return $('tgAuthError').textContent='Введи шестизначный код.';$('tgAuthVerify').disabled=true;$('tgAuthVerify').textContent='Проверяем…';try{const data=await tgAuthCall('verify-login-code',{number:tgAuthNumber,code});if(!data.session)throw new Error(data.error||'Сервер не вернул сессию.');localStorage.setItem(tgAuthSessionKey,JSON.stringify(data.session));localStorage.setItem('topgram-linked-number',tgAuthFormatNumber(tgAuthNumber));profileData.phone=tgAuthFormatNumber(tgAuthNumber);saveProfile();await tgAuthSyncProfile();tgAuthEnter()}catch(e){$('tgAuthError').textContent=e.message}finally{$('tgAuthVerify').disabled=false;$('tgAuthVerify').textContent='Продолжить'}};
+$('tgAuthVerify').onclick=async()=>{const code=$('tgAuthOtp').value.trim();if(!/^\d{6}$/.test(code))return $('tgAuthError').textContent='Введи шестизначный код.';$('tgAuthVerify').disabled=true;$('tgAuthVerify').textContent='Проверяем…';try{const data=await tgAuthCall('verify-login-code',{number:tgAuthNumber,code});if(!data.session)throw new Error(data.error||'Сервер не вернул сессию.');localStorage.setItem(tgAuthSessionKey,JSON.stringify(data.session));localStorage.setItem('topgram-linked-number',tgAuthFormatNumber(tgAuthNumber));profileData.phone=tgAuthFormatNumber(tgAuthNumber);saveProfile();await tgAuthSyncProfile();tgAuthEnter();loadTopgramGiftAdmin()}catch(e){$('tgAuthError').textContent=e.message}finally{$('tgAuthVerify').disabled=false;$('tgAuthVerify').textContent='Продолжить'}};
 
 // Keep settings overlay outside the app stacking/overflow context.
 const settingsNode=document.getElementById('settingsView');if(settingsNode&&settingsNode.parentElement!==document.body)document.body.appendChild(settingsNode);
@@ -657,23 +674,57 @@ $('settingsTab').onclick=openSettings;
 $('settingsBack').onclick=()=>{$('settingsView').style.setProperty('display','none','important');$('settingsView').setAttribute('aria-hidden','true');document.documentElement.classList.remove('settings-open');document.body.classList.remove('settings-open');$('app').classList.remove('settings-open');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));$('chatsTab').classList.add('active')};
 $('profileSettings').onclick=openSettings;
 
-// Telegram-style gift recipient picker (TopGram local demo)
-function openGiftPicker(){
- const eligible=chats.filter(c=>c&&c.type!=='bot'&&c.type!=='group'&&c.type!=='saved'&&c.isBot!==true&&c.bot!==true&&c.is_bot!==true&&String(c.name||'').trim()).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ru'));
- const recipientMarkup=()=>'<div class="gift-picker-head"><button type="button" class="gift-picker-back" id="giftPickerClose" aria-label="Закрыть">‹</button><div><strong>Кому отправить подарок</strong><small>Выберите пользователя TopGram</small></div></div><div class="gift-search"><span>⌕</span><input id="giftSearch" placeholder="Поиск по имени или @username" autocomplete="off"></div><div class="gift-section-title">Недавние и контакты</div><div id="giftRecipients" class="gift-recipients"></div>';
- const draw=(query='')=>{
-  const q=query.trim().toLocaleLowerCase('ru');
-  const found=eligible.filter(c=>(String(c.name)+' '+String(c.handle||'')).toLocaleLowerCase('ru').includes(q));
-  $('giftRecipients').innerHTML=found.length?found.map(c=>'<button type="button" class="gift-recipient" data-gift-id="'+esc(c.id)+'"><span class="gift-avatar '+esc(c.color||'')+'">'+(c.photo?'<img src="'+esc(c.photo)+'" alt="">':esc(initials(c.name)))+'</span><span class="gift-recipient-info"><b>'+esc(c.name)+'</b><small>'+esc(c.handle||'Пользователь TopGram')+'</small></span><span class="gift-chevron">›</span></button>').join(''):'<div class="gift-empty"><div class="gift-empty-icon">♙</div><strong>'+(q?'Ничего не найдено':'Пока нет контактов')+'</strong><p>'+(q?'Попробуйте изменить запрос':'Здесь появятся люди, с которыми вы начали общение в TopGram.')+'</p></div>';
-  $('giftRecipients').querySelectorAll('[data-gift-id]').forEach(b=>b.onclick=()=>{const recipient=eligible.find(c=>c.id===b.dataset.giftId);if(recipient)showGiftCatalog(recipient)});
- };
- const showGiftCatalog=recipient=>{
+// Каталог обычных подарков TopGram. NFT-маркет заменён на выпущенные подарки.
+function giftDesignLibrary(){
   const collections='Intelligence Cups|Algorithm Cups|Lucky Lockets|Durov’s Glasses|Resistance Dogs|Heart Lockets|Heroic Helmets|Mighty Arms|Mirage Lamps|Nail Bracelets|Precious Peaches|Perfume Bottles|Mini Oscars|Gem Signets|Bling Binkies|Plush Pepes|Ion Gems|Genie Lamps|Ionic Dryers|Astral Shards|Bonded Rings|Artisan Bricks|Durov’s Caps|Magic Potions|Love Candles|Surge Boards|Khabib’s Papakhas|Rare Birds|Fine Pens|Sharp Tongues|Valentine Boxes|Neko Helmets|Joyful Bundles|Electric Skulls|Sleigh Bells|Snow Mittens|Westside Signs|Record Players|Eternal Roses|Cupid Charms|Pretty Posies|Sky Stilettos|Loot Bags|Holiday Drinks|Snow Globes|Mad Pumpkins|Flying Brooms|Low Riders|Love Potions|Lush Bouquets|Bunny Muffins|UFC Strikes|Skull Flowers|Hanging Stars|Signet Rings|Kissed Frogs|Mousse Cakes|Crystal Balls|Diamond Rings|Bow Ties|Vintage Cigars|Jingle Bells|Berry Boxes|Top Hats|Hypno Lollipops|Star Notepads|Timeless Books|Trapped Hearts|Money Pots|Restless Jars|Winter Wreaths|Snake Boxes|Swiss Watches|Voodoo Dolls|Tama Gadgets|Happy Brownies|Pet Snakes|Faith Amulets|Spiced Wines|Eternal Candles|Fresh Socks|Santa Hats|Big Years|Moon Pendants|Jester Hats|Spring Baskets|Cookie Hearts|Jelly Bunnies|Scared Cats|Sakura Flowers|Hex Pots|Input Keys|Jolly Chimps|Whip Cupcakes|Victory Medals|Mood Packs|Jacks-in-the-Box|Xmas Stockings|Pool Floats|Stellar Rockets|Candy Canes|Light Swords|Evil Eyes|Ginger Cookies|Snoop Cigars|Clover Pins|Lunar Snakes|Swag Bags|Party Sparklers|B-Day Candles|Liberty Figures|Instant Ramens|Easter Eggs|Spy Agarics|Toy Bears|Witch Hats|Homemade Cakes|Desk Calendars|Ice Creams|Chill Flames|Vice Creams|Snoop Doggs|Lol Pops'.split('|');
   const giftAssetMap={"Intelligence Cups":"intelligence_cup","Algorithm Cups":"algorithm_cup","Lucky Lockets":"lucky_lockets","Durov’s Glasses":"durovs_glasses","Resistance Dogs":"resistance_dogs","Heart Lockets":"heart_locket","Heroic Helmets":"heroic_helmet","Mighty Arms":"mighty_arm","Mirage Lamps":"mirage_lamps","Nail Bracelets":"nail_bracelet","Precious Peaches":"precious_peach","Perfume Bottles":"perfume_bottle","Mini Oscars":"mini_oscar","Gem Signets":"gem_signet","Bling Binkies":"bling_binky","Plush Pepes":"plush_pepe","Ion Gems":"ion_gem","Genie Lamps":"genie_lamp","Ionic Dryers":"ionic_dryer","Astral Shards":"astral_shard","Bonded Rings":"bonded_ring","Artisan Bricks":"artisan_brick","Durov’s Caps":"durovs_cap","Magic Potions":"magic_potion","Love Candles":"love_candle","Surge Boards":"surge_board","Khabib’s Papakhas":"khabibs_papakha","Rare Birds":"rare_bird","Fine Pens":"fine_pens","Sharp Tongues":"sharp_tongue","Valentine Boxes":"valentine_box","Neko Helmets":"neko_helmet","Joyful Bundles":"joyful_bundle","Electric Skulls":"electric_skull","Sleigh Bells":"sleigh_bell","Snow Mittens":"snow_mittens","Westside Signs":"westside_sign","Record Players":"record_player","Eternal Roses":"eternal_rose","Cupid Charms":"cupid_charm","Pretty Posies":"pretty_posy","Sky Stilettos":"sky_stilettos","Loot Bags":"loot_bag","Holiday Drinks":"holiday_drink","Snow Globes":"snow_globe","Mad Pumpkins":"mad_pumpkin","Flying Brooms":"flying_broom","Low Riders":"low_rider","Love Potions":"love_potion","Lush Bouquets":"lush_bouquet","Bunny Muffins":"bunny_muffin","UFC Strikes":"ufc_strike","Skull Flowers":"skull_flower","Hanging Stars":"hanging_star","Signet Rings":"signet_ring","Kissed Frogs":"kissed_frog","Mousse Cakes":"mousse_cake","Crystal Balls":"crystal_ball","Diamond Rings":"diamond_ring","Bow Ties":"bow_tie","Vintage Cigars":"vintage_cigar","Jingle Bells":"jingle_bells","Berry Boxes":"berry_box","Top Hats":"top_hat","Hypno Lollipops":"hypno_lollipop","Star Notepads":"star_notepad","Timeless Books":"timeless_book","Trapped Hearts":"trapped_heart","Money Pots":"money_pot","Restless Jars":"restless_jar","Winter Wreaths":"winter_wreath","Snake Boxes":"snake_box","Swiss Watches":"swiss_watch","Voodoo Dolls":"voodoo_doll","Tama Gadgets":"tama_gadget","Happy Brownies":"happy_brownie","Pet Snakes":"pet_snake","Faith Amulets":"faith_amulet","Spiced Wines":"spiced_wine","Eternal Candles":"eternal_candle","Fresh Socks":"fresh_socks","Santa Hats":"santa_hat","Big Years":"big_year","Moon Pendants":"moon_pendant","Jester Hats":"jester_hat","Spring Baskets":"spring_basket","Cookie Hearts":"cookie_heart","Jelly Bunnies":"jelly_bunny","Scared Cats":"scared_cat","Sakura Flowers":"sakura_flower","Hex Pots":"hex_pot","Input Keys":"input_key","Jolly Chimps":"jolly_chimp","Whip Cupcakes":"whip_cupcake","Victory Medals":"victory_medal","Mood Packs":"mood_pack","Jacks-in-the-Box":"jackinthebox","Xmas Stockings":"xmas_stocking","Pool Floats":"pool_float","Stellar Rockets":"stellar_rocket","Candy Canes":"candy_cane","Light Swords":"light_sword","Evil Eyes":"evil_eye","Ginger Cookies":"ginger_cookie","Snoop Cigars":"snoop_cigar","Clover Pins":"clover_pin","Lunar Snakes":"lunar_snake","Swag Bags":"swag_bag","Party Sparklers":"party_sparkler","B-Day Candles":"bday_candle","Liberty Figures":"liberty_figure","Instant Ramens":"instant_ramen","Easter Eggs":"easter_egg","Spy Agarics":"spy_agaric","Toy Bears":"toy_bear","Witch Hats":"witch_hat","Homemade Cakes":"homemade_cake","Desk Calendars":"desk_calendar","Ice Creams":"ice_cream","Chill Flames":"chill_flame","Vice Creams":"vice_cream","Snoop Doggs":"snoop_dogg","Lol Pops":"lol_pop"};
-  const giftAssetName=name=>giftAssetMap[name]||name.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
-  const giftSlug=name=>giftAssetName(name).replace(/_/g,'');
-  const catalogMarkup=items=>items.length?items.map((name,index)=>{const slug=giftSlug(name),asset=giftAssetName(name),pattern=index%6;return '<button type="button" class="gift-item nft-gift-item" data-gift-name="'+esc(name)+'"><span class="nft-art nft-pattern-'+pattern+'"><span class="nft-art-glow"></span><svg class="nft-art-emblem" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 7 88 30 82 73 50 94 18 73 12 30Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M50 7v87M12 30h76M18 73h64M12 30l38 22 38-22M18 73l32-21 32 21" fill="none" stroke="currentColor" stroke-width="1" opacity=".7"/><circle cx="50" cy="51" r="7" fill="currentColor"/></svg><img class="nft-art-image" loading="lazy" alt="" aria-hidden="true" data-step="0" data-slug="'+slug+'" data-asset="'+asset+'" src="https://cdn.jsdelivr.net/gh/ssamy2/TelegramGiftsAssests@main/webp/by_name/'+asset+'.webp"></span><b>'+esc(name)+'</b><small>Коллекционный подарок</small></button>'}).join(''):'<div class="gift-empty"><strong>Ничего не найдено</strong><p>Попробуйте другое название</p></div>';
-  const wireGiftImages=root=>root.querySelectorAll('.nft-art-image').forEach(img=>{
+  const assetName=name=>giftAssetMap[name]||name.toLowerCase().replace(/[’']/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+  const slug=name=>assetName(name).replace(/_/g,'');
+  return {collections,assetName,slug};
+}
+let topgramGiftAdmin=false;
+let topgramGiftRows=[];
+async function tgGiftApi(action,payload={}){
+  const session=tgAuthSavedSession();
+  if(!session?.access_token)throw new Error('Сначала войди в аккаунт TopGram.');
+  const response=await fetch(TG_SUPABASE_URL+'/functions/v1/topgram-gifts-admin',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token},
+    body:JSON.stringify({action,...payload})
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||'Не удалось загрузить подарки.');
+  return data;
+}
+function ensureGiftAdminButton(){
+  const giftButton=$('settingGift');
+  const group=giftButton?.closest('.settings-group');
+  if(!group||$('settingGiftAdmin'))return;
+  const button=document.createElement('button');
+  button.type='button';button.className='settings-row';button.id='settingGiftAdmin';
+  button.innerHTML='<span class="settings-icon purple">⚙</span><span><strong>Админ-панель подарков</strong><small>Выпуск, стоимость и тираж</small></span>';
+  group.insertBefore(button,giftButton);
+  button.onclick=openGiftAdmin;
+}
+async function loadTopgramGiftAdmin(){
+  try{
+    const data=await tgGiftApi('list');
+    topgramGiftAdmin=!!data.is_admin;
+    topgramGiftRows=Array.isArray(data.gifts)?data.gifts:[];
+    if(topgramGiftAdmin)ensureGiftAdminButton();
+    else $('settingGiftAdmin')?.remove();
+  }catch(error){
+    topgramGiftAdmin=false;
+    $('settingGiftAdmin')?.remove();
+    console.warn('TopGram gift admin check:',error);
+  }
+}
+function giftImageMarkup(asset,slug){
+  const url='https://cdn.jsdelivr.net/gh/ssamy2/TelegramGiftsAssests@main/webp/by_name/'+asset+'.webp';
+  return '<div class="tg-gift-art"><span>🎁</span><img loading="lazy" alt="" src="'+url+'" data-asset="'+asset+'" data-slug="'+slug+'"></div>';
+}
+function wireTopgramGiftImages(root){
+  root.querySelectorAll('.tg-gift-art img').forEach(img=>{
     const asset=img.dataset.asset,slug=img.dataset.slug;
     const sources=[
       'https://cdn.jsdelivr.net/gh/ssamy2/TelegramGiftsAssests@main/webp/by_name/'+asset+'.webp',
@@ -681,36 +732,73 @@ function openGiftPicker(){
       'https://raw.githubusercontent.com/ssamy2/TelegramGiftsAssests/main/webp/by_name/'+asset+'.webp',
       'https://fragment.com/file/gifts/'+slug+'/thumb.webp'
     ];
-    let attempt=0,timer=null;
-    const loadNext=()=>{
-      if(timer)clearTimeout(timer);
-      if(attempt>=sources.length){img.hidden=true;img.parentElement.classList.add('art-unavailable');return}
-      const url=sources[attempt++];
-      img.dataset.step=String(attempt);
-      img.src=url+(url.includes('?')?'&':'?')+'topgram_retry='+attempt;
-    };
-    img.onload=()=>{if(timer)clearTimeout(timer);img.hidden=false;img.parentElement.classList.remove('art-unavailable')};
-    img.onerror=loadNext;
-    if(img.complete&&img.naturalWidth===0)loadNext();
+    let step=0;
+    img.onerror=()=>{step++;if(step<sources.length)img.src=sources[step];else img.remove()};
   });
-  modal('NFT-подарки','<div class="gift-picker-head"><button type="button" class="gift-picker-back" id="giftPickerBack" aria-label="Назад">‹</button><div><strong>Подарок для '+esc(recipient.name)+'</strong><small>Коллекции Telegram Gifts</small></div></div><div class="gift-recipient-preview"><span class="gift-avatar '+esc(recipient.color||'')+'">'+esc(initials(recipient.name))+'</span><span><b>'+esc(recipient.name)+'</b><small>'+esc(recipient.handle||'Пользователь TopGram')+'</small></span></div><div class="gift-search"><span>⌕</span><input id="nftGiftSearch" placeholder="Поиск NFT-коллекции" autocomplete="off"></div><div class="gift-section-title" id="nftGiftCount">Коллекции · '+collections.length+'</div><div class="gift-catalog" id="nftGiftCatalog">'+catalogMarkup(collections)+'</div><p class="gift-note">Демонстрационный каталог коллекций. Отправка настоящих Telegram NFT не подключена; выбранный подарок сохранится только в истории этого локального чата.</p>',()=>{const chosen=$('modalBody').querySelector('.nft-gift-item.selected');if(!chosen)return toast('Сначала выберите коллекцию');const gift=chosen.dataset.giftName;const chat=chats.find(c=>c.id===recipient.id);if(chat){const message='🎁 NFT-подарок: '+gift;const time=now();chat.messages.push({text:message,mine:true,time});chat.last=message;chat.time=time;chat.updated=Date.now();chat.started=true;save()}close();toast(chat?'NFT-подарок добавлен в историю чата':'Подарок выбран в демо')},'Отправить подарок');
+}
+function openGiftAdmin(){
+  if(!topgramGiftAdmin)return toast('Админ-панель доступна только владельцу +888 8888.');
+  const library=giftDesignLibrary();
+  const options=library.collections.map(name=>'<option value="'+esc(name)+'">'+esc(name)+'</option>').join('');
+  const current=topgramGiftRows.map(g=>'<div class="tg-admin-existing"><span>🎁 <b>'+esc(g.gift_name)+'</b></span><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐ · осталось '+Math.max(0,Number(g.total_supply)-Number(g.issued_count))+' из '+Number(g.total_supply)+'</small></div>').join('');
+  modal('Админ-панель подарков',
+    '<div class="tg-admin-wrap"><p class="tg-admin-hint">Выпуск обычного подарка TopGram. Укажи стоимость и общий тираж.</p>'+
+    '<label for="tgGiftDesign">Дизайн подарка</label><select id="tgGiftDesign">'+options+'</select>'+
+    '<label for="tgGiftPrice">Стоимость в звёздах</label><input id="tgGiftPrice" type="number" min="1" max="1000000000" step="1" value="100" inputmode="numeric">'+
+    '<label for="tgGiftSupply">Тираж (сколько выпустить)</label><input id="tgGiftSupply" type="number" min="1" max="1000000" step="1" value="100" inputmode="numeric">'+
+    '<div class="tg-admin-section-title">Уже выпущенные подарки</div>'+(current||'<p class="tg-admin-empty">Пока ничего не выпущено.</p>')+'</div>',
+    async()=>{
+      const name=$('tgGiftDesign').value;
+      const price=Number($('tgGiftPrice').value);
+      const supply=Number($('tgGiftSupply').value);
+      if(!Number.isSafeInteger(price)||price<1)return toast('Укажи стоимость от 1 звезды.');
+      if(!Number.isSafeInteger(supply)||supply<1)return toast('Укажи тираж от 1 экземпляра.');
+      $('confirmModal').disabled=true;
+      try{
+        const gift=await tgGiftApi('mint',{gift_name:name,gift_key:library.slug(name),asset_key:library.assetName(name),price_stars:price,total_supply:supply});
+        topgramGiftRows.unshift(gift.gift);
+        close();
+        toast('Подарок выпущен и добавлен в каталог.');
+      }catch(error){toast(error.message);$('confirmModal').disabled=false}
+    },'Выпустить подарок');
+  $('confirmModal').disabled=false;
+}
+async function openGiftPicker(){
+  const eligible=chats.filter(c=>c&&c.type!=='bot'&&c.type!=='group'&&c.type!=='saved'&&c.isBot!==true&&c.bot!==true&&c.is_bot!==true&&String(c.name||'').trim()).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ru'));
+  const recipientMarkup=()=>'<div class="gift-picker-head"><button type="button" class="gift-picker-back" id="giftPickerClose" aria-label="Закрыть">‹</button><div><strong>Кому отправить подарок</strong><small>Выберите пользователя TopGram</small></div></div><div class="gift-search"><span>⌕</span><input id="giftSearch" placeholder="Поиск по имени или @username" autocomplete="off"></div><div class="gift-section-title">Недавние и контакты</div><div id="giftRecipients" class="gift-recipients"></div>';
+  const draw=(query='')=>{
+    const q=query.trim().toLocaleLowerCase('ru');
+    const found=eligible.filter(c=>(String(c.name)+' '+String(c.handle||'')).toLocaleLowerCase('ru').includes(q));
+    $('giftRecipients').innerHTML=found.length?found.map(c=>'<button type="button" class="gift-recipient" data-gift-id="'+esc(c.id)+'"><span class="gift-avatar '+esc(c.color||'')+'">'+(c.photo?'<img src="'+esc(c.photo)+'" alt="">':esc(initials(c.name)))+'</span><span class="gift-recipient-info"><b>'+esc(c.name)+'</b><small>'+esc(c.handle||'Пользователь TopGram')+'</small></span><span class="gift-chevron">›</span></button>').join(''):'<div class="gift-empty"><div class="gift-empty-icon">♙</div><strong>'+(q?'Ничего не найдено':'Пока нет контактов')+'</strong><p>'+(q?'Попробуйте изменить запрос':'Здесь появятся люди, с которыми вы начали общение в TopGram.')+'</p></div>';
+    $('giftRecipients').querySelectorAll('[data-gift-id]').forEach(b=>b.onclick=()=>{const recipient=eligible.find(c=>c.id===b.dataset.giftId);if(recipient)showGiftCatalog(recipient)});
+  };
+  const showGiftCatalog=async recipient=>{
+    let gifts=[];
+    try{const data=await tgGiftApi('list');gifts=Array.isArray(data.gifts)?data.gifts:[]}
+    catch(error){return toast(error.message)}
+    const library=giftDesignLibrary();
+    const card=g=>'<button type="button" class="gift-item tg-market-gift" data-gift-id="'+esc(g.id)+'">'+giftImageMarkup(g.asset_key,g.gift_key)+'<b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐</small><small>Осталось '+Math.max(0,Number(g.total_supply)-Number(g.issued_count))+' из '+Number(g.total_supply)+'</small></button>';
+    modal('Подарки TopGram',
+      '<div class="gift-picker-head"><button type="button" class="gift-picker-back" id="giftPickerBack" aria-label="Назад">‹</button><div><strong>Подарок для '+esc(recipient.name)+'</strong><small>Обычные подарки TopGram</small></div></div><div class="gift-recipient-preview"><span class="gift-avatar '+esc(recipient.color||'')+'">'+esc(initials(recipient.name))+'</span><span><b>'+esc(recipient.name)+'</b><small>'+esc(recipient.handle||'Пользователь TopGram')+'</small></span></div><div class="gift-section-title">Доступные подарки · '+gifts.length+'</div><div class="gift-catalog tg-market-catalog" id="tgMarketCatalog">'+(gifts.length?gifts.map(card).join(''):'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong><p>Владелец TopGram сможет выпустить первые подарки через админ-панель.</p></div>')+'</div><p class="gift-note">Здесь отображаются только подарки, выпущенные владельцем TopGram. Покупка и списание звёзд будут подключены отдельным этапом.</p>',
+      ()=>{const chosen=$('modalBody').querySelector('.tg-market-gift.selected');if(!chosen)return toast('Сначала выбери подарок.');const gift=gifts.find(g=>g.id===chosen.dataset.giftId);close();toast(gift?'Подарок выбран. Покупка пока не подключена.':'Подарок недоступен.')},'Выбрать подарок');
+    $('modalBackdrop').classList.add('gift-picker-backdrop');
+    $('modalTitle').style.display='none';
+    $('modalBody').classList.add('gift-picker-body');
+    $('giftPickerBack').onclick=()=>openGiftPicker();
+    $('modalBody').querySelectorAll('.tg-market-gift').forEach(b=>b.onclick=()=>{$('modalBody').querySelectorAll('.tg-market-gift').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');$('confirmModal').disabled=false});
+    $('confirmModal').disabled=!gifts.length;
+    wireTopgramGiftImages($('modalBody'));
+  };
+  modal('Подарки',recipientMarkup(),close,'Закрыть');
   $('modalBackdrop').classList.add('gift-picker-backdrop');
-  $('giftPickerBack').onclick=()=>openGiftPicker();
-  const renderNftCatalog=()=>{const q=$('nftGiftSearch').value.trim().toLocaleLowerCase('ru');const found=collections.filter(x=>x.toLocaleLowerCase('ru').includes(q));$('nftGiftCount').textContent='Коллекции · '+found.length+' из '+collections.length;$('nftGiftCatalog').innerHTML=catalogMarkup(found);wireGiftImages($('nftGiftCatalog'));$('modalBody').querySelectorAll('.nft-gift-item').forEach(x=>x.onclick=()=>{$('modalBody').querySelectorAll('.nft-gift-item').forEach(y=>y.classList.remove('selected'));x.classList.add('selected');$('confirmModal').disabled=false})};
-  $('nftGiftSearch').oninput=renderNftCatalog;
-  wireGiftImages($('nftGiftCatalog'));
-  $('modalBody').querySelectorAll('.nft-gift-item').forEach(x=>x.onclick=()=>{$('modalBody').querySelectorAll('.nft-gift-item').forEach(y=>y.classList.remove('selected'));x.classList.add('selected');$('confirmModal').disabled=false});
-  $('confirmModal').disabled=true;
- };
- modal('Подарки',recipientMarkup(),close,'Закрыть');
- $('modalBackdrop').classList.add('gift-picker-backdrop');
- $('modalTitle').style.display='none';
- $('modalBody').classList.add('gift-picker-body');
- $('giftPickerClose').onclick=close;
- draw();
- $('giftSearch').oninput=e=>draw(e.target.value);
+  $('modalTitle').style.display='none';
+  $('modalBody').classList.add('gift-picker-body');
+  $('giftPickerClose').onclick=close;
+  draw();
+  $('giftSearch').oninput=e=>draw(e.target.value);
 }
 $('settingGift').onclick=e=>{e.preventDefault();e.stopPropagation();openGiftPicker();};
+if(tgAuthSavedSession())loadTopgramGiftAdmin();
 $('settingsSearch').onclick=()=>modal('Поиск по настройкам','<input id="settingsSearchInput" placeholder="Найти настройку">',()=>{const q=$('settingsSearchInput').value.trim();close();if(q)toast('Поиск по настройкам: '+q)},'Найти');
 $('settingsMore').onclick=()=>modal('Настройки TopGram','<p>Это демонстрационный экран настроек TopGram.</p>',close,'Понятно');
 $('settingAccount').onclick=()=>{ $('app').classList.remove('settings-open');openAccount()};
