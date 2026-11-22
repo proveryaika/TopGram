@@ -405,6 +405,20 @@ body.tg-auth-active{overflow:hidden}
 }
 @media(max-width:360px){.tg-auth-country select{width:94px}.tg-auth-input{padding:0 11px}.tg-auth-card{padding-left:0;padding-right:0}}
 
+
+/* Clear, native-feeling phone and verification steps */
+.tg-auth-step-icon{width:66px;height:66px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;color:#55baf0;background:linear-gradient(145deg,#233e51,#1c3040);border:1px solid #35536a;box-shadow:0 8px 24px #0002}
+.tg-auth-step-icon svg{width:30px;height:30px}
+.tg-auth-step-title{font-size:23px;font-weight:700;letter-spacing:-.35px;margin:0 0 9px;color:#f4f8fb}
+.tg-auth-step-description{font-size:14px;line-height:1.55;color:#9eafbd;max-width:315px;margin:0 auto 22px}
+#tgAuthPhone .tg-auth-label{margin-top:18px}
+.tg-auth-code-number{display:inline-block;padding:9px 16px;margin:0 auto 6px;border-radius:10px;background:#1e2c39;border:1px solid #344657;color:#eaf5fb;font-size:17px;font-weight:650;letter-spacing:.5px}
+#tgAuthCode .tg-auth-label{text-align:center;margin-top:18px}
+#tgAuthCode .tg-auth-input{max-width:270px;display:block;margin:0 auto}
+#tgAuthCode .tg-auth-btn{max-width:270px;display:block;margin-left:auto;margin-right:auto}
+#tgAuthCode .tg-auth-back{margin-top:12px}
+@media(max-height:620px){.tg-auth-step-icon{width:48px;height:48px;margin-bottom:10px}.tg-auth-step-icon svg{width:24px;height:24px}.tg-auth-step-title{font-size:20px}.tg-auth-step-description{margin-bottom:12px}}
+
 </style>
 </head>
 <body>
@@ -415,12 +429,19 @@ body.tg-auth-active{overflow:hidden}
     <p class="tg-auth-copy" id="tgAuthCopy">Общайтесь и оставайтесь на связи. Войдите в свой аккаунт TopGram.</p>
     <div id="tgAuthWelcome"><button class="tg-auth-btn" id="tgAuthStart">Начать общение</button><p class="tg-auth-note">Для входа используется постоянный виртуальный номер TopGram. Коды подтверждения приходят в Telegram-бот.</p></div>
     <div id="tgAuthPhone" hidden>
+      <div class="tg-auth-step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.6 2.8h10.8A2.6 2.6 0 0 1 20 5.4v13.2a2.6 2.6 0 0 1-2.6 2.6H6.6A2.6 2.6 0 0 1 4 18.6V5.4a2.6 2.6 0 0 1 2.6-2.6ZM9 6h6M10 18h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <h2 class="tg-auth-step-title">Ваш номер</h2>
+      <p class="tg-auth-step-description">Введите постоянный виртуальный номер, который вы получили в боте TopGram.</p>
       <label class="tg-auth-label" for="tgAuthNumber">Номер TopGram</label>
       <div class="tg-auth-country"><select class="tg-auth-input" id="tgAuthPrefix" aria-label="Код страны"><option value="7">+7</option><option value="1">+1</option></select><input class="tg-auth-input" id="tgAuthNumber" inputmode="numeric" autocomplete="tel" placeholder="777 777 77 77" maxlength="14"></div>
       <button class="tg-auth-btn" id="tgAuthSend">Получить код</button><button class="tg-auth-back" id="tgAuthPhoneBack">Назад</button>
     </div>
     <div id="tgAuthCode" hidden>
-      <label class="tg-auth-label" for="tgAuthOtp">Код из Telegram</label>
+      <div class="tg-auth-step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v8H4v-8a2 2 0 0 1 2-2Zm6 4v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h2 class="tg-auth-step-title">Введите код</h2>
+      <p class="tg-auth-step-description">Мы отправили код подтверждения в Telegram-бот TopGram для номера:</p>
+      <div class="tg-auth-code-number" id="tgAuthCodeNumber">+7</div>
+      <label class="tg-auth-label" for="tgAuthOtp">Код подтверждения</label>
       <input class="tg-auth-input" id="tgAuthOtp" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••" maxlength="6">
       <button class="tg-auth-btn" id="tgAuthVerify">Продолжить</button><button class="tg-auth-back" id="tgAuthCodeBack">Изменить номер</button>
     </div>
@@ -502,7 +523,7 @@ const tgAuthSessionKey='topgram-auth-session';
 const tgAuth=$('tgAuth');
 let tgAuthNumber='';
 function tgAuthDigits(){return ( $('tgAuthPrefix').value + $('tgAuthNumber').value.replace(/\\D/g,'') ).slice(0,11)}
-function tgAuthShow(step){$('tgAuthWelcome').hidden=step!=='welcome';$('tgAuthPhone').hidden=step!=='phone';$('tgAuthCode').hidden=step!=='code';$('tgAuthError').textContent='';$('tgAuthCopy').textContent=step==='welcome'?'Общайтесь и оставайтесь на связи. Войдите в свой аккаунт TopGram.':step==='phone'?'Введите постоянный виртуальный номер, который вы получили у бота TopGram.':'Введите шестизначный код, отправленный ботом TopGram в Telegram.'}
+function tgAuthShow(step){$('tgAuthWelcome').hidden=step!=='welcome';$('tgAuthPhone').hidden=step!=='phone';$('tgAuthCode').hidden=step!=='code';$('tgAuthError').textContent='';$('tgAuthCopy').textContent=step==='welcome'?'Общайтесь и оставайтесь на связи. Войдите в свой аккаунт TopGram.':step==='phone'?'Войдите по постоянному виртуальному номеру TopGram.':'Подтвердите вход с помощью кода из Telegram-бота TopGram.';if(step==='code')$('tgAuthCodeNumber').textContent='+'+tgAuthNumber.slice(0,1)+' '+tgAuthNumber.slice(1)}
 function tgAuthEnter(){tgAuth.hidden=true;document.body.classList.remove('tg-auth-active')}
 function tgAuthSavedSession(){try{const x=JSON.parse(localStorage.getItem(tgAuthSessionKey)||'null');return x&&x.access_token&&x.expires_at>Date.now()/1000+30?x:null}catch{return null}}
 if(tgAuth){document.body.classList.add('tg-auth-active');if(tgAuthSavedSession())tgAuthEnter();else tgAuthShow('welcome')}
