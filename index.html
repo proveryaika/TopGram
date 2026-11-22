@@ -1573,16 +1573,20 @@ async function tgGiftApi(action,payload={}){
 }
 function ensureGiftAdminButton(){
   const giftButton=$('settingGift');
-  if(!giftButton||$('settingGiftAdmin'))return;
-  const button=document.createElement('button');
-  button.type='button';button.className='settings-row';button.id='settingGiftAdmin';
-  button.innerHTML='<span class="settings-icon purple">⚙</span><span><strong>Админ-панель</strong><small>Выпуск подарков, цены и тираж</small></span>';
-  giftButton.parentElement.insertBefore(button,giftButton);
+  if(!giftButton)return;
+  let button=$('settingGiftAdmin');
+  if(!button){
+    button=document.createElement('button');
+    button.type='button';button.className='settings-row';button.id='settingGiftAdmin';
+    button.innerHTML='<span class="settings-icon purple">⚙</span><span><strong>Админ-панель</strong><small>Управление TopGram · только владелец</small></span>';
+    giftButton.parentElement.insertBefore(button,giftButton);
+  }
+  button.hidden=false;button.style.display='';
   button.onclick=async()=>{
     button.disabled=true;
     try{
       const data=await tgGiftApi('list');
-      if(!data.is_admin){topgramGiftAdmin=false;button.remove();return toast('Доступ к админ-панели разрешён только владельцу +888 8888.');}
+      if(!data.is_admin){topgramGiftAdmin=false;button.hidden=true;return toast('Доступ разрешён только владельцу TopGram (+888 8888).');}
       topgramGiftAdmin=true;
       topgramGiftRows=Array.isArray(data.gifts)?data.gifts:[];
       openGiftAdmin();
@@ -1591,17 +1595,21 @@ function ensureGiftAdminButton(){
   };
 }
 async function loadTopgramGiftAdmin(){
+  const button=$('settingGiftAdmin');
   try{
-    if(profileData.username)await tgGiftApi('save_username',{username:profileData.username});
     const data=await tgGiftApi('list');
     topgramGiftAdmin=!!data.is_admin;
     topgramGiftRows=Array.isArray(data.gifts)?data.gifts:[];
-    if(data.username!==undefined){profileData.username=data.username||'';profileData.collectibleUsername=data.collectible_username||'';saveProfile();renderProfile()}
-    if(topgramGiftAdmin)ensureGiftAdminButton();
-    else $('settingGiftAdmin')?.remove();
+    if(topgramGiftAdmin){
+      ensureGiftAdminButton();
+      if(data.username!==undefined){profileData.username=data.username||'';profileData.collectibleUsername=data.collectible_username||'';saveProfile();renderProfile()}
+      if(profileData.username&&profileData.username!==data.username){
+        try{await tgGiftApi('save_username',{username:profileData.username})}catch(error){console.warn('Username sync skipped:',error.message)}
+      }
+    }else if(button){button.hidden=true;button.style.display='none'}
   }catch(error){
-    topgramGiftAdmin=false;
-    $('settingGiftAdmin')?.remove();
+    // A transient profile/username sync error must never delete the owner entry point.
+    if(button&&topgramGiftAdmin){button.hidden=false;button.style.display=''}
     console.warn('TopGram gift admin check:',error);
   }
 }
