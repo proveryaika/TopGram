@@ -1065,7 +1065,7 @@ function tgRandomGiftValue(key,current){
   const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);
   return pool[bytes[0]%pool.length];
 }
-async async function openGiftMarket(){
+async function openGiftMarket(){
   let data;try{data=await tgGiftApi('list')}catch(e){return toast(e.message)}
   const gifts=(data.gifts||[]).filter(g=>g.gift_type!=='collectible');
   const cards=gifts.map(g=>'<button type="button" class="gift-item tg-market-gift" data-gift-id="'+esc(g.id)+'">'+tgGiftCardArt(g,{})+'<b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐</small></button>').join('');
