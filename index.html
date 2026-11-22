@@ -746,6 +746,172 @@ body.light .tg-inventory-card{background:#fff;border-color:#e8eaed}
   #modalBackdrop.gift-picker-backdrop .modal-actions button{font-size:15px!important;padding:10px 12px!important}
 }
 
+
+/* TopGram storefront + admin: dark Telegram-like palette, mobile-first layout */
+#modalBackdrop.gift-picker-backdrop,
+#modalBackdrop.gift-picker-backdrop.show{background:#17212b!important;color:#f5f7fa!important}
+#modalBackdrop.gift-picker-backdrop>.modal{
+  background:#17212b!important;color:#f5f7fa!important;border:0!important;
+}
+#modalBackdrop.gift-picker-backdrop #modalBody.gift-picker-body{
+  background:#17212b!important;color:#f5f7fa!important;
+}
+#modalBackdrop.gift-picker-backdrop .modal-actions{
+  flex-shrink:0!important;justify-content:space-between!important;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom))!important;
+  background:#17212b!important;border-top:1px solid #ffffff18!important;
+}
+#modalBackdrop.gift-picker-backdrop .modal-actions button{
+  min-height:48px!important;border-radius:13px!important;font-size:15px!important;
+}
+#modalBackdrop.gift-picker-backdrop .modal-actions #cancelModal{flex:0 0 auto!important}
+#modalBackdrop.gift-picker-backdrop .modal-actions #confirmModal{flex:1 1 auto!important;max-width:62%!important}
+#modalBackdrop.gift-picker-backdrop .gift-picker-head{color:#f5f7fa!important}
+#modalBackdrop.gift-picker-backdrop .tg-market-balance{margin:0 0 14px!important}
+#modalBackdrop.gift-picker-backdrop .tg-market-catalog{
+  padding:0 0 16px!important;gap:10px!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-market-catalog .tg-market-gift{
+  min-height:154px!important;padding:12px 8px!important;
+  border:1px solid #34485a!important;border-radius:16px!important;
+  background:#202f40!important;color:#f5f7fa!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-market-catalog .tg-market-gift b{
+  color:#f5f7fa!important;font-size:14px!important;line-height:1.3!important;
+  overflow-wrap:anywhere!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-market-catalog .tg-market-gift small{color:#b8c6d3!important}
+#modalBackdrop.gift-picker-backdrop .tg-market-catalog .tg-market-gift.selected{
+  border:2px solid #3390ec!important;background:#1b3a50!important;color:#fff!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-market-catalog .tg-market-gift.selected b,
+#modalBackdrop.gift-picker-backdrop .tg-market-catalog .tg-market-gift.selected small{color:#fff!important}
+#modalBackdrop.gift-picker-backdrop .tg-market-gift .tg-gift-art{
+  width:90px!important;height:90px!important;max-width:100%!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-send-gift-form{
+  margin:4px 0 10px!important;padding:16px!important;gap:11px!important;
+  border:1px solid #34485a!important;border-radius:16px!important;
+  background:#202f40!important;color:#f5f7fa!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-send-gift-form label{color:#f5f7fa!important;font-size:14px!important}
+#modalBackdrop.gift-picker-backdrop .tg-send-gift-form input:not([type=checkbox]),
+#modalBackdrop.gift-picker-backdrop .tg-send-gift-form textarea{
+  min-height:48px!important;margin:0!important;padding:12px 13px!important;
+  border:1px solid #405366!important;border-radius:12px!important;
+  background:#17212b!important;color:#f5f7fa!important;font-size:16px!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-send-gift-form textarea{min-height:88px!important}
+#modalBackdrop.gift-picker-backdrop .tg-send-gift-form input::placeholder,
+#modalBackdrop.gift-picker-backdrop .tg-send-gift-form textarea::placeholder{color:#8292a2!important}
+#modalBackdrop.gift-picker-backdrop .tg-send-gift-form .tg-gift-option{display:flex!important;align-items:center!important;gap:10px!important}
+#modalBackdrop.gift-picker-backdrop .tg-send-gift-form .tg-gift-option input{width:19px!important;height:19px!important;accent-color:#2aabee!important}
+
+/* Admin dashboard mirrors the reference catalog workflow, adapted to TopGram. */
+#modalBackdrop.gift-picker-backdrop .tg-admin-dashboard{gap:13px!important;padding:4px 0 20px!important;color:#f5f7fa!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-hero{
+  min-height:118px!important;padding:17px!important;border:1px solid #42617c!important;
+  background:linear-gradient(135deg,#142d42,#214b68)!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-hero h2{color:#fff!important;font-size:21px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-hero p{color:#c1d3e1!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-metrics>div{
+  min-width:0!important;padding:12px!important;border:1px solid #34485a!important;
+  border-radius:13px!important;background:#202f40!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-metrics small{color:#a8b7c5!important;font-size:11px!important;white-space:normal!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-metrics b{color:#f4d36e!important;font-size:20px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-section-title{
+  margin-top:8px!important;padding-top:14px!important;border-top:1px solid #ffffff18!important;
+  color:#f5f7fa!important;font-size:15px!important;font-weight:750!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-dashboard-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-dashboard-actions>button{
+  min-height:104px!important;padding:13px!important;border:1px solid #34485a!important;
+  border-radius:14px!important;background:#202f40!important;color:#f5f7fa!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-dashboard-actions>button b{color:#f5f7fa!important;font-size:13px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-dashboard-actions>button small{color:#a8b7c5!important;font-size:11px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-catalog-tools{grid-template-columns:minmax(0,1fr) 132px!important;gap:8px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-catalog-tools input,
+#modalBackdrop.gift-picker-backdrop .tg-admin-catalog-tools select{
+  min-width:0!important;width:100%!important;border:1px solid #405366!important;
+  border-radius:11px!important;background:#202f40!important;color:#f5f7fa!important;
+  padding:11px!important;font-size:13px!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-catalog-list{gap:8px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-catalog-row{
+  min-width:0!important;padding:11px!important;gap:9px!important;
+  border:1px solid #34485a!important;border-radius:14px!important;background:#202f40!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-gift-icon{background:#263b4d!important;color:#d8e9f5!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-gift-main b{color:#f5f7fa!important;font-size:13px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-gift-main small{color:#a8b7c5!important;white-space:normal!important;line-height:1.35!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-catalog-row>button,
+#modalBackdrop.gift-picker-backdrop .tg-admin-dashboard-footer>button{
+  background:#229ed9!important;color:#fff!important;border-radius:10px!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-empty{color:#a8b7c5!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-dashboard-footer{color:#a8b7c5!important;flex-wrap:wrap!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-wrap,
+#modalBackdrop.gift-picker-backdrop .tg-admin-form{color:#f5f7fa!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-wrap label,
+#modalBackdrop.gift-picker-backdrop .tg-admin-form label{color:#c6d2dc!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-wrap input,
+#modalBackdrop.gift-picker-backdrop .tg-admin-wrap select,
+#modalBackdrop.gift-picker-backdrop .tg-admin-wrap textarea,
+#modalBackdrop.gift-picker-backdrop .tg-admin-form input,
+#modalBackdrop.gift-picker-backdrop .tg-admin-form select,
+#modalBackdrop.gift-picker-backdrop .tg-admin-form textarea{
+  width:100%!important;min-height:46px!important;padding:11px 12px!important;
+  border:1px solid #405366!important;border-radius:11px!important;
+  background:#202f40!important;color:#f5f7fa!important;font:inherit!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-wrap textarea,
+#modalBackdrop.gift-picker-backdrop .tg-admin-form textarea{min-height:92px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-hint{color:#a8b7c5!important;line-height:1.5!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-existing{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  flex-wrap:wrap!important;gap:10px!important;padding:12px!important;
+  border:1px solid #34485a!important;border-radius:12px!important;
+  background:#202f40!important;color:#f5f7fa!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-existing b{color:#f5f7fa!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-existing small{color:#a8b7c5!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-existing button{
+  border:1px solid #405366!important;border-radius:9px!important;
+  padding:8px 10px!important;background:#263b4d!important;color:#f5f7fa!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-version-row{
+  border-color:#34485a!important;background:#202f40!important;color:#f5f7fa!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-version-row small{color:#a8b7c5!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-json{
+  background:#101a23!important;color:#dbe8f2!important;border:1px solid #34485a!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-pack-preview-choice{
+  border:1px solid #405366!important;border-radius:10px!important;
+  padding:8px 10px!important;background:#263b4d!important;color:#f5f7fa!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-stats-wrap,
+#modalBackdrop.gift-picker-backdrop .tg-stats-table-scroll{max-width:100%!important;overflow-x:auto!important}
+#modalBackdrop.gift-picker-backdrop .tg-stats-total,
+#modalBackdrop.gift-picker-backdrop .tg-stats-table{
+  background:#202f40!important;color:#f5f7fa!important;border-color:#34485a!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-stats-table th,
+#modalBackdrop.gift-picker-backdrop .tg-stats-table td{color:#e7eef5!important;border-color:#34485a!important}
+@media(max-width:420px){
+  #modalBackdrop.gift-picker-backdrop #modalBody{padding-left:14px!important;padding-right:14px!important}
+  #modalBackdrop.gift-picker-backdrop .tg-admin-catalog-tools{grid-template-columns:1fr!important}
+  #modalBackdrop.gift-picker-backdrop .tg-admin-catalog-row{align-items:flex-start!important;flex-wrap:wrap!important}
+  #modalBackdrop.gift-picker-backdrop .tg-admin-catalog-row>button{margin-left:49px!important}
+  #modalBackdrop.gift-picker-backdrop .tg-admin-dashboard-footer{align-items:stretch!important;flex-direction:column!important}
+  #modalBackdrop.gift-picker-backdrop .tg-admin-dashboard-footer>button{min-height:44px!important}
+}
+
 </style>
 </head>
 <body>
