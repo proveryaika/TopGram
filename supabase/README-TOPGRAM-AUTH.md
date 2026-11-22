@@ -17,12 +17,12 @@ Do not share any of these secrets in chat or commit them to GitHub.
 ## Deploy order
 
 1. Run `migrations/202611220001_virtual_numbers.sql` in Supabase SQL Editor.
-2. Deploy Edge Functions `telegram-bot`, `request-login-code`, and `verify-login-code`.
+2. Deploy Edge Functions `telegram-bot`, `request-login-code`, `verify-login-code`, and `sync-topgram-profile`.
 3. Configure Telegram webhook to:
    `https://<PROJECT_REF>.supabase.co/functions/v1/telegram-bot`
    using Telegram's `setWebhook` API and set `secret_token` to the same TELEGRAM_WEBHOOK_SECRET.
 4. In Telegram, open the bot and press Start. The bot's button issues one permanent number.
-5. Connect the TopGram login screen to request-login-code and verify-login-code.
+5. Connect the TopGram login screen to `request-login-code` and `verify-login-code`; `sync-topgram-profile` links the signed-in session to the TopGram profile and returns its public display number.
 
 ## Security notes
 
