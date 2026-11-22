@@ -854,6 +854,7 @@ function tgPackAssetPaths(gift){
   const paths=[gift.base_animation];
   const upgrade=gift.upgrade||{};
   for(const item of [...(upgrade.models||[]),...(upgrade.patterns||[])])if(item?.animation)paths.push(item.animation);
+  if(gift.upgrade){for(const [key,items] of [['models',upgrade.models],['patterns',upgrade.patterns],['backdrops',upgrade.backdrops]]){const selectable=(items||[]).filter(x=>x&&x.name&&!x.crafted&&Number(x.permille??1)>0);if(selectable.length<2)throw new Error('Для NFT-улучшения нужны минимум два варианта: '+key+'.');}}
   return [...new Set(paths.filter(Boolean).map(String))];
 }
 async function tgInspectGiftPack(file){
@@ -958,8 +959,7 @@ function openGiftPacksAdmin(){
     '<label for="tgPackDescription">Описание</label><textarea id="tgPackDescription" maxlength="500" rows="3" placeholder="Описание набора"></textarea>'+
     '<button type="button" id="tgPackUpload">Проверить и загрузить ZIP</button>'+
     '<div class="tg-admin-section-title">Полка наборов</div><div id="tgPackShelf" class="tg-admin-shelf">Загружаем…</div></div>',
-    null,'Закрыть');
-  $('confirmModal').style.display='none';
+    ()=>close(),'Закрыть');
   $('tgPackFile').onchange=async()=>{
     const file=$('tgPackFile').files?.[0],status=$('tgPackInspection');
     if(!file){status.textContent='Архив не выбран.';return}
