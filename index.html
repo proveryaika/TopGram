@@ -927,7 +927,7 @@ async function tgInspectGiftPack(file){
   const titles=new Set(),slugs=new Set(),gifts=[];let totalUncompressed=0;
   for(const gift of manifest.gifts){
     const title=String(gift?.title||'').trim();
-    if(gift.auction||gift.require_premium||gift.support_only||gift.limited_per_user||Number(gift.resell_min_stars||0)>0)throw new Error('В этом наборе есть аукционные, Premium, support-only или resale-правила, которые пока не поддерживаются TopGram.');
+    if(gift.auction||gift.require_premium||gift.support_only||gift.limited_per_user||Number(gift.per_user_total||0)>0||Number(gift.resell_min_stars||0)>0||Number(gift.convert_stars||0)>0)throw new Error('В этом наборе есть аукционные, Premium, support-only или resale-правила, которые пока не поддерживаются TopGram.');
     if((gift.upgrade?.models||[]).some(x=>x?.crafted))throw new Error('Craft-only модели пока не поддерживаются импортёром TopGram.');
     if(!!gift.limited !== (Number(gift.availability_total||0)>0))throw new Error('Для ограниченного тиража укажи availability_total, а для обычного подарка оставь его равным нулю.');
     if(!title||!Number.isSafeInteger(Number(gift.stars))||Number(gift.stars)<1||!gift.base_animation)throw new Error('У каждого подарка должны быть title, stars от 1 и base_animation.');
