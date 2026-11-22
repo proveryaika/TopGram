@@ -483,6 +483,19 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 .tg-upgrade-cost{text-align:center;font-size:15px;font-weight:700;color:#f3d77a;padding:8px}
 .tg-upgrade-disclosure{font-size:11px;line-height:1.4;color:#8495a5;text-align:center;margin:0 8px}
 
+
+.profile-gifts-area{display:none;margin:22px auto 100px;max-width:680px}
+.profile-gifts-area.active{display:block}
+.profile-gifts-empty{text-align:center;color:var(--muted);padding:56px 18px}
+.profile-gifts-empty .gift-empty-icon{font-size:42px;margin-bottom:12px}
+.profile-gifts-empty strong{display:block;color:var(--text);font-size:20px;margin-bottom:8px}
+.profile-gifts-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.profile-gift-card{min-width:0;background:#202f40;border-radius:16px;padding:10px;text-align:center}
+.profile-gift-card .tg-gift-art{width:100%;aspect-ratio:1}
+.profile-gift-card b{display:block;font-size:13px;margin:8px 0 4px}
+.profile-gift-card small{display:block;color:#a8b6c4;font-size:11px}
+.profile-gift-card button{margin-top:8px;border:0;border-radius:10px;background:#2aabee;color:white;padding:8px 12px;font-size:12px}
+.profile-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
 </style>
 </head>
 <body>
@@ -517,7 +530,7 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 <header><div class="brand">TopGram</div><button class="header-btn" id="searchToggle" aria-label="Поиск"></button><button class="header-btn" id="menuBtn" aria-label="Меню">⋮</button></header><div class="dropdown-menu" id="chatDropdown"><button class="dropdown-item" id="themeMenuItem"><span class="dropdown-icon" id="themeMenuIcon"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M16 2v4m0 20v4M2 16h4m20 0h4M6 6l3 3m14 14 3 3M26 6l-3 3M9 23l-3 3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span><span id="themeMenuText">Дневной режим</span></button><div class="dropdown-separator"></div><button class="dropdown-item" id="createGroupMenu"><span class="dropdown-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="12" cy="10" r="5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M2.5 27c0-5 4-8 9.5-8s9.5 3 9.5 8M22 6a5 5 0 0 1 0 9.5M24 20c3.5 1 5.5 3.2 5.5 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>Создать группу</button><button class="dropdown-item" id="favoritesMenu"><span class="dropdown-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 4h18v25l-9-6-9 6V4Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg></span>Избранное</button></div>
 <div class="search-wrap" id="searchWrap"><input class="search" id="search" placeholder="Поиск чатов и пользователей…" autocomplete="off"></div>
 <div class="chat-list" id="chatList"></div>
-<section class="profile-view" id="profileView"><div class="profile-tools"><button class="round-tool" id="qrBtn" aria-label="QR-код"><svg viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="7" height="7" rx="1.5"/><rect x="14.5" y="2.5" width="7" height="7" rx="1.5"/><rect x="2.5" y="14.5" width="7" height="7" rx="1.5"/><path d="M14.5 14.5h2v2h-2zM19.5 14.5h2M14.5 19.5h2M19.5 19.5h2v2h-2z"/></svg></button><button class="round-tool" id="profileMenu" aria-label="Открыть меню профиля"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.8" fill="currentColor" stroke="none"/></svg></button><div class="dropdown-menu" id="profileDropdown"><button class="dropdown-item" id="profileColorMenu"><span class="dropdown-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C8.8 3 3 8.5 3 15.2 3 22 8.5 27 15.2 27h2.1c2.1 0 3.3-2.3 2.1-4-1.1-1.6-.2-3.7 1.8-3.7H24c3 0 5-2.4 5-5.2C29 8.1 23.2 3 16 3Z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="10" cy="12" r="1.7" fill="currentColor"/><circle cx="16" cy="8.5" r="1.7" fill="currentColor"/><circle cx="22" cy="12" r="1.7" fill="currentColor"/><rect x="22" y="2" width="8" height="10" rx="2" fill="#263746"/><path d="M24 6V4.8a2 2 0 0 1 4 0V6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span>Изменить цвет профиля</button><button class="dropdown-item" id="usernameMenu"><span class="dropdown-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M20 19v-6a5 5 0 1 0-1.5 3.6c.5 1.5 2.2 2.4 4 1.6 2.3-1.1 3.5-3.7 3.5-6.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M26 23v7m-3.5-3.5h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>Задать имя пользователя</button></div></div><div class="profile-center"><div class="profile-photo" id="profilePhoto">•</div><div class="profile-name" id="profileName">Пользователь TopGram</div><div class="profile-status">•<br>В сети</div></div><div class="profile-actions"><button class="profile-action" id="choosePhoto"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" fill="currentColor"/><circle cx="12" cy="13" r="3.5" fill="#293846"/><path d="M19 17v5m-2.5-2.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Выбрать фото</button><button class="profile-action" id="editProfile"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4 4 16.5Z" fill="currentColor"/><path d="m14.8 5.7 3.5 3.5" stroke="#293846" stroke-width="1.5"/></svg></span>Изменить</button><button class="profile-action" id="profileSettings"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4l.6 2.4a8 8 0 0 1 1.8 1l2.3-.8 2 3.5-1.8 1.7a8 8 0 0 1 0 2.1l1.8 1.7-2 3.5-2.3-.8a8 8 0 0 1-1.8 1L14 20h-4l-.6-2.4a8 8 0 0 1-1.8-1l-2.3.8-2-3.5 1.8-1.7a8 8 0 0 1 0-2.1L3.3 8.4l2-3.5 2.3.8a8 8 0 0 1 1.8-1L10 2Z" fill="currentColor"/><circle cx="12" cy="11.5" r="3" fill="#293846"/></svg></span>Настройки</button></div><div class="profile-phone"><div class="profile-info-item"><strong id="profilePhone">Будет назначен позже</strong><span>Телефон</span></div><div class="profile-info-item" id="profileUsernameItem" hidden><strong id="profileUsername"></strong><span>Имя пользователя</span></div><div class="profile-info-item profile-info-description" id="profileAboutItem" hidden><strong id="profileAbout"></strong><span>О себе</span></div></div><div class="profile-tabs"><button class="profile-tab active" id="publicationsTab">Публикации</button><button class="profile-tab" id="archiveTab">Архив публикаций</button></div><div id="postsArea"></div><button class="add-post" id="addPost">📷 &nbsp;Добавить</button><input type="file" id="photoInput" accept="image/*" hidden></section><section class="account-view" id="accountView">
+<section class="profile-view" id="profileView"><div class="profile-tools"><button class="round-tool" id="qrBtn" aria-label="QR-код"><svg viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="7" height="7" rx="1.5"/><rect x="14.5" y="2.5" width="7" height="7" rx="1.5"/><rect x="2.5" y="14.5" width="7" height="7" rx="1.5"/><path d="M14.5 14.5h2v2h-2zM19.5 14.5h2M14.5 19.5h2M19.5 19.5h2v2h-2z"/></svg></button><button class="round-tool" id="profileMenu" aria-label="Открыть меню профиля"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.8" fill="currentColor" stroke="none"/></svg></button><div class="dropdown-menu" id="profileDropdown"><button class="dropdown-item" id="profileColorMenu"><span class="dropdown-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C8.8 3 3 8.5 3 15.2 3 22 8.5 27 15.2 27h2.1c2.1 0 3.3-2.3 2.1-4-1.1-1.6-.2-3.7 1.8-3.7H24c3 0 5-2.4 5-5.2C29 8.1 23.2 3 16 3Z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="10" cy="12" r="1.7" fill="currentColor"/><circle cx="16" cy="8.5" r="1.7" fill="currentColor"/><circle cx="22" cy="12" r="1.7" fill="currentColor"/><rect x="22" y="2" width="8" height="10" rx="2" fill="#263746"/><path d="M24 6V4.8a2 2 0 0 1 4 0V6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span>Изменить цвет профиля</button><button class="dropdown-item" id="usernameMenu"><span class="dropdown-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M20 19v-6a5 5 0 1 0-1.5 3.6c.5 1.5 2.2 2.4 4 1.6 2.3-1.1 3.5-3.7 3.5-6.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M26 23v7m-3.5-3.5h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>Задать имя пользователя</button></div></div><div class="profile-center"><div class="profile-photo" id="profilePhoto">•</div><div class="profile-name" id="profileName">Пользователь TopGram</div><div class="profile-status">•<br>В сети</div></div><div class="profile-actions"><button class="profile-action" id="choosePhoto"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" fill="currentColor"/><circle cx="12" cy="13" r="3.5" fill="#293846"/><path d="M19 17v5m-2.5-2.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Выбрать фото</button><button class="profile-action" id="editProfile"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4 4 16.5Z" fill="currentColor"/><path d="m14.8 5.7 3.5 3.5" stroke="#293846" stroke-width="1.5"/></svg></span>Изменить</button><button class="profile-action" id="profileSettings"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4l.6 2.4a8 8 0 0 1 1.8 1l2.3-.8 2 3.5-1.8 1.7a8 8 0 0 1 0 2.1l1.8 1.7-2 3.5-2.3-.8a8 8 0 0 1-1.8 1L14 20h-4l-.6-2.4a8 8 0 0 1-1.8-1l-2.3.8-2-3.5 1.8-1.7a8 8 0 0 1 0-2.1L3.3 8.4l2-3.5 2.3.8a8 8 0 0 1 1.8-1L10 2Z" fill="currentColor"/><circle cx="12" cy="11.5" r="3" fill="#293846"/></svg></span>Настройки</button></div><div class="profile-phone"><div class="profile-info-item"><strong id="profilePhone">Будет назначен позже</strong><span>Телефон</span></div><div class="profile-info-item" id="profileUsernameItem" hidden><strong id="profileUsername"></strong><span>Имя пользователя</span></div><div class="profile-info-item profile-info-description" id="profileAboutItem" hidden><strong id="profileAbout"></strong><span>О себе</span></div></div><div class="profile-tabs"><button class="profile-tab active" id="publicationsTab">Публикации</button><button class="profile-tab" id="archiveTab">Архив публикаций</button><button class="profile-tab" id="profileGiftsTab">Подарки</button></div><div id="postsArea"></div><div id="profileGiftsArea" class="profile-gifts-area"></div><button class="add-post" id="addPost">📷 &nbsp;Добавить</button><input type="file" id="photoInput" accept="image/*" hidden></section><section class="account-view" id="accountView">
 <div class="account-top"><button class="account-back" id="accountBack" aria-label="Назад"><svg viewBox="0 0 24 24"><path d="M19 12H5m7 7-7-7 7-7"/></svg></button><strong>Аккаунт</strong><button class="account-save" id="accountSave">Сохранить</button></div>
 <div class="account-scroll">
 <section class="account-card name-card"><h3>Ваше имя</h3><input id="accountFirst" maxlength="40" placeholder="Имя"><input id="accountLast" maxlength="40" placeholder="Фамилия"></section>
@@ -837,8 +850,8 @@ async function openGiftInventory(){
     const attrs=item.attributes||{};
     return '<div class="tg-inventory-card">'+tgGiftCardArt(g)+'<div class="tg-inventory-info"><b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>Модель: '+esc(attrs.model||'Классическая')+'</small><small>Узор: '+esc(attrs.pattern||'Без узора')+'</small><small>Фон: '+esc(attrs.background||'Стандартный')+'</small><button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'">Улучшить</button></div></div>';
   }).join('');
-  modal('Мой инвентарь',
-    '<div class="gift-picker-head"><div><strong>Мои подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Инвентарь пуст</strong><p>Купи первый подарок в маркете.</p></div>')+'</div>',
+  modal('Подарки',
+    '<div class="gift-picker-head"><div><strong>Подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут показаны здесь.</p></div>')+'</div>',
     close,'Готово');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
   $('modalBody').querySelectorAll('.tg-upgrade-open').forEach(b=>b.onclick=()=>{
@@ -848,41 +861,36 @@ async function openGiftInventory(){
 }
 function openGiftUpgrade(item){
   const gift=item.gift||{},attrs=item.attributes||{};
-  let chosenAttribute='model';
   const optionMarkup=key=>tgGiftUpgradeOptions[key].values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
-  const body='<div class="tg-upgrade-screen"><div class="tg-upgrade-stage" id="tgUpgradeStage">'+tgGiftCardArt(gift)+'</div><h3>'+esc(gift.gift_name||'Подарок')+'</h3><p class="tg-upgrade-subtitle">Выбери точный вариант улучшения</p><div class="tg-current-attributes"><span>Модель: <b>'+esc(attrs.model||'Классическая')+'</b></span><span>Узор: <b>'+esc(attrs.pattern||'Без узора')+'</b></span><span>Фон: <b>'+esc(attrs.background||'Стандартный')+'</b></span></div><label for="tgUpgradeType">Что улучшить</label><select id="tgUpgradeType"><option value="model">Модель · 120 ⭐</option><option value="pattern">Узор · 60 ⭐</option><option value="background">Фон · 90 ⭐</option></select><label for="tgUpgradeValue">Новый вариант</label><select id="tgUpgradeValue">'+optionMarkup('model')+'</select><div class="tg-upgrade-cost" id="tgUpgradeCost">Стоимость: 120 ⭐</div><p class="tg-upgrade-disclosure">Выбранный вариант будет установлен после анимации. Сюрприз-рандома и скрытых шансов нет.</p></div>';
+  const body='<div class="tg-upgrade-screen"><div class="tg-upgrade-stage" id="tgUpgradeStage">'+tgGiftCardArt(gift)+'</div><h3>'+esc(gift.gift_name||'Подарок')+'</h3><p class="tg-upgrade-subtitle">Все три характеристики улучшаются одновременно</p><div class="tg-current-attributes"><span>Сейчас: '+esc(attrs.model||'Классическая')+' · '+esc(attrs.pattern||'Без узора')+' · '+esc(attrs.background||'Стандартный')+'</span></div><label for="tgUpgradeModel">🎁 Модель · 120 ⭐</label><select id="tgUpgradeModel">'+optionMarkup('model')+'</select><label for="tgUpgradePattern">✦ Узор · 60 ⭐</label><select id="tgUpgradePattern">'+optionMarkup('pattern')+'</select><label for="tgUpgradeBackground">🎨 Фон · 90 ⭐</label><select id="tgUpgradeBackground">'+optionMarkup('background')+'</select><div class="tg-upgrade-cost" id="tgUpgradeCost">Стоимость: 270 ⭐</div><p class="tg-upgrade-disclosure">Выбери все три результата заранее. После нажатия они одновременно прокрутятся и применятся. Итог и стоимость видны до подтверждения.</p></div>';
   modal('Улучшение подарка',body,async()=>{
-    const type=$('tgUpgradeType').value,value=$('tgUpgradeValue').value;
+    const attributes={model:$('tgUpgradeModel').value,pattern:$('tgUpgradePattern').value,background:$('tgUpgradeBackground').value};
     const stage=$('tgUpgradeStage');$('confirmModal').disabled=true;$('confirmModal').textContent='Улучшаем…';
     stage.classList.remove('tg-spinning');void stage.offsetWidth;stage.classList.add('tg-spinning');
-    await new Promise(resolve=>setTimeout(resolve,1350));
+    $('modalBody').querySelectorAll('select').forEach(x=>x.disabled=true);
+    await new Promise(resolve=>setTimeout(resolve,1550));
     try{
-      const result=await tgGiftApi('upgrade',{inventory_id:item.id,attribute:type,value});
+      const result=await tgGiftApi('upgrade_bundle',{inventory_id:item.id,attributes});
       topgramStars=Number(result.upgrade.stars);
       const balance=$('starsPageBalance');if(balance)balance.textContent=topgramStars.toLocaleString('ru-RU');
-      close();toast('Готово! '+tgGiftUpgradeOptions[type].label+': '+value);
-      openGiftInventory();
-    }catch(e){stage.classList.remove('tg-spinning');toast(e.message);$('confirmModal').disabled=false;$('confirmModal').textContent='Улучшить за '+tgGiftUpgradeOptions[$('tgUpgradeType').value].cost+' ⭐'}
-  },'Улучшить за 120 ⭐');
+      close();toast('Подарок улучшен! Списано '+Number(result.upgrade.cost).toLocaleString('ru-RU')+' ⭐');
+      if($('profileGiftsArea')?.classList.contains('active'))renderProfileGifts();
+      else openGiftInventory();
+    }catch(error){stage.classList.remove('tg-spinning');$('modalBody').querySelectorAll('select').forEach(x=>x.disabled=false);toast(error.message);$('confirmModal').disabled=false;$('confirmModal').textContent='Улучшить за 270 ⭐'}
+  },'Улучшить за 270 ⭐');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
-  const sync=()=>{
-    const type=$('tgUpgradeType').value,config=tgGiftUpgradeOptions[type];
-    $('tgUpgradeValue').innerHTML=optionMarkup(type);
-    $('tgUpgradeCost').textContent='Стоимость: '+config.cost+' ⭐';
-    $('confirmModal').textContent='Улучшить за '+config.cost+' ⭐';
+  const recalc=()=>{
+    const prices={model:120,pattern:60,background:90};
+    const count=(attributes,key)=>attributes[key]!==$('tgUpgrade'+key[0].toUpperCase()+key.slice(1)).value;
+    const total=Object.keys(prices).reduce((sum,key)=>sum+(count(attrs,key)?prices[key]:0),0);
+    $('tgUpgradeCost').textContent='Стоимость: '+total.toLocaleString('ru-RU')+' ⭐';
+    $('confirmModal').textContent='Улучшить за '+total.toLocaleString('ru-RU')+' ⭐';
+    $('confirmModal').disabled=total===0;
   };
-  $('tgUpgradeType').onchange=sync;
-  wireTopgramGiftImages($('modalBody'));
+  ['Model','Pattern','Background'].forEach(id=>$('tgUpgrade'+id).onchange=recalc);
+  recalc();wireTopgramGiftImages($('modalBody'));
 }
 $('settingGift').querySelector('strong').textContent='Маркет подарков';
-const giftSettingsGroup=$('settingGift').closest('.settings-group');
-if(giftSettingsGroup&&!$('settingInventory')){
-  const inventoryButton=document.createElement('button');
-  inventoryButton.type='button';inventoryButton.className='settings-row';inventoryButton.id='settingInventory';
-  inventoryButton.innerHTML='<span class="settings-icon purple">🎁</span><span><strong>Мои подарки</strong><small>Инвентарь и улучшения</small></span>';
-  giftSettingsGroup.insertBefore(inventoryButton,$('settingGift').nextSibling);
-  inventoryButton.onclick=openGiftInventory;
-}
 $('settingGift').onclick=e=>{e.preventDefault();e.stopPropagation();openGiftMarket();};
 if(tgAuthSavedSession())loadTopgramGiftAdmin();
 
@@ -902,12 +910,28 @@ $('starsPageBack').onclick=()=>{$('starsPage').classList.remove('open')};
 $('starsTopUpInfo').onclick=()=>toast('Пополнение звёзд пока не подключено');
 ['Premium','Business'].forEach(k=>{const el=$('setting'+k);if(el)el.onclick=()=>modal(el.querySelector('strong').textContent,'<p>Этот раздел пока не подключён в демоверсии TopGram.</p>',close,'Понятно')});
 ['Ask','Faq','Features','Policy'].forEach(k=>{const el=$('setting'+k);if(el)el.onclick=()=>modal(el.querySelector('strong').textContent,'<p>Раздел справки TopGram будет добавлен позже.</p>',close,'Понятно')});
+async function renderProfileGifts(){
+  const area=$('profileGiftsArea');if(!area)return;
+  area.classList.add('active');$('postsArea').style.display='none';$('addPost').style.display='none';
+  area.innerHTML='<div class="profile-gifts-empty">Загружаем подарки…</div>';
+  try{
+    const data=await tgGiftRefreshWallet(),items=data.inventory||[];
+    if(!items.length){area.innerHTML='<div class="profile-gifts-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут отображаться здесь.</p></div>';return}
+    area.innerHTML='<div class="profile-gifts-grid">'+items.map(item=>{
+      const g=item.gift||{},a=item.attributes||{};
+      return '<div class="profile-gift-card">'+tgGiftCardArt(g)+'<b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>'+esc(a.model||'Классическая')+'</small><small>'+esc(a.pattern||'Без узора')+'</small><small>'+esc(a.background||'Стандартный')+'</small><button type="button" class="profile-gift-upgrade" data-id="'+esc(item.id)+'">Улучшить</button></div>';
+    }).join('')+'</div>';
+    area.querySelectorAll('.profile-gift-upgrade').forEach(btn=>btn.onclick=()=>{const item=items.find(x=>x.id===btn.dataset.id);if(item)openGiftUpgrade(item)});
+    wireTopgramGiftImages(area);
+  }catch(error){area.innerHTML='<div class="profile-gifts-empty">Не удалось загрузить подарки. '+esc(error.message)+'</div>'}
+}
 function renderProfile(){
 $('profileName').textContent=profileData.name||'Пользователь TopGram';
 $('profileUsername').textContent=profileData.username?'@'+profileData.username:'';$('profileUsernameItem').hidden=!profileData.username;
 $('profileAbout').textContent=profileData.about||'';$('profileAboutItem').hidden=!profileData.about;
 $('profilePhoto').style.background=profileColor;$('profilePhoto').innerHTML=profileData.photo?'<img alt="Фото профиля" src="'+profileData.photo+'">':'•';
 const linkedPhone=profileData.phone||localStorage.getItem('topgram-linked-number')||'';if(linkedPhone&&profileData.phone!==linkedPhone){profileData.phone=linkedPhone;saveProfile()}$('profilePhone').textContent=displayPhone(linkedPhone)||'Номер появится после входа по номеру TopGram';
+$('profileGiftsArea').classList.remove('active');$('postsArea').style.display='block';$('addPost').style.display=showingArchive?'none':'block';
 let items=showingArchive?profileData.archive:profileData.posts;
 $('postsArea').innerHTML=items.length?'<div class="post-list">'+items.map(p=>'<div class="post-card">'+(p.image?'<img src="'+p.image+'" alt="Публикация">':'<p>'+esc(p.text)+'</p>')+'</div>').join('')+'</div>':'<div class="posts-empty"><strong>'+(showingArchive?'Архив пока пуст...':'Публикаций пока нет...')+'</strong><p>'+(showingArchive?'Здесь будут сохранённые публикации':'Публикуйте фотографии и видео в своём профиле')+'</p></div>';
 $('addPost').style.display=showingArchive?'none':'block';
@@ -969,8 +993,9 @@ $('favoritesMenu').onclick=()=>{$('chatDropdown').classList.remove('open');let c
 $('profileColorMenu').onclick=()=>{$('profileDropdown').classList.remove('open');modal('Цвет профиля','<p>Выбери цвет аватара:</p><div style="display:flex;gap:12px;flex-wrap:wrap">'+['#2aabee','#36a889','#8b6ac8','#d18a48','#d65d78','#607d9a'].map(c=>'<button type="button" data-color="'+c+'" style="width:42px;height:42px;border:3px solid #ffffff44;border-radius:50%;background:'+c+'"></button>').join('')+'</div>',close,'Готово');document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{profileColor=b.dataset.color;profileData.color=profileColor;saveProfile();$('profilePhoto').style.background=profileColor;close();toast('Цвет профиля изменён')})};
 $('usernameMenu').onclick=()=>{$('profileDropdown').classList.remove('open');modal('Имя пользователя','<label for="usernameModalInput">Имя пользователя</label><input id="usernameModalInput" maxlength="24" value="'+esc(profileData.username||'')+'" placeholder="Например, topgram_user"><p style="color:#8292a2;font-size:13px">Можно использовать латинские буквы, цифры и подчёркивание.</p>',()=>{let v=$('usernameModalInput').value.trim().replace(/^@/,'');if(v&&!/^[a-zA-Z0-9_]{5,24}$/.test(v))return toast('Нужно 5–24 символа: латиница, цифры или _');profileData.username=v;saveProfile();close();toast(v?'Имя пользователя сохранено: @'+v:'Имя пользователя очищено')},'Сохранить')};
 $('qrBtn').onclick=()=>modal('QR профиля','<div style="text-align:center"><div style="font-size:48px;margin:16px">▦</div><strong>'+esc(profileData.name)+'</strong><p style="color:#8292a2">QR-код появится после подключения аккаунтов TopGram.</p></div>',close,'Закрыть');
-$('publicationsTab').onclick=()=>{showingArchive=false;$('publicationsTab').classList.add('active');$('archiveTab').classList.remove('active');renderProfile()};
-$('archiveTab').onclick=()=>{showingArchive=true;$('archiveTab').classList.add('active');$('publicationsTab').classList.remove('active');renderProfile()};
+$('publicationsTab').onclick=()=>{showingArchive=false;document.querySelectorAll('.profile-tab').forEach(x=>x.classList.remove('active'));$('publicationsTab').classList.add('active');renderProfile()};
+$('archiveTab').onclick=()=>{showingArchive=true;document.querySelectorAll('.profile-tab').forEach(x=>x.classList.remove('active'));$('archiveTab').classList.add('active');renderProfile()};
+$('profileGiftsTab').onclick=()=>{document.querySelectorAll('.profile-tab').forEach(x=>x.classList.remove('active'));$('profileGiftsTab').classList.add('active');$('postsArea').style.display='none';$('addPost').style.display='none';renderProfileGifts()};
 $('addPost').onclick=()=>modal('Новая публикация','<label for="postText">Текст публикации</label><input id="postText" maxlength="300" placeholder="Что нового?">',()=>{let text=$('postText').value.trim();if(!text)return toast('Напиши текст публикации');profileData.posts.unshift({text:text,created:Date.now()});saveProfile();close();renderProfile();toast('Публикация добавлена')},'Опубликовать');
 
 function profile(c){modal('Действия чата','<div class="chat-action-sheet"><button type="button" data-chat-action="profile">Открыть профиль</button><button type="button" data-chat-action="mute">'+(c.muted?'Включить уведомления':'Отключить уведомления')+'</button><button type="button" data-chat-action="clear">Очистить историю</button><button type="button" data-chat-action="delete" class="danger">Удалить чат</button></div>',close,'Закрыть');document.querySelectorAll('[data-chat-action]').forEach(b=>b.onclick=()=>{const action=b.dataset.chatAction;if(action==='profile'){modal('Профиль','<div style="text-align:center"><div class="avatar" style="margin:0 auto 12px">'+esc(initials(c.name))+'</div><strong>'+esc(c.name)+'</strong><p style="color:#8292a2">'+esc(c.handle||'TopGram')+'</p></div>',close,'Готово')}else if(action==='mute'){c.muted=!c.muted;save();close();toast(c.muted?'Уведомления отключены':'Уведомления включены')}else if(action==='clear'){modal('Очистить историю?','<p>Все сообщения в этом диалоге будут удалены с этого устройства.</p>',()=>{c.messages=[];c.last='';c.time='';c.updated=Date.now();save();close();select(c.id);toast('История очищена')},'Очистить')}else if(action==='delete'){modal('Удалить чат?','<p>Диалог и его сообщения будут удалены с этого устройства.</p>',()=>{chats=chats.filter(x=>x.id!==c.id);save();close();$('app').classList.remove('open-chat');activeId=null;render();toast('Чат удалён')},'Удалить')}})}
