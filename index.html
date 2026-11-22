@@ -1111,7 +1111,7 @@ $('starsPageBack').onclick=()=>{$('starsPage').classList.remove('open')};
 $('starsTopUpInfo').onclick=()=>toast('Пополнение звёзд пока не подключено');
 ['Premium','Business'].forEach(k=>{const el=$('setting'+k);if(el)el.onclick=()=>modal(el.querySelector('strong').textContent,'<p>Этот раздел пока не подключён в демоверсии TopGram.</p>',close,'Понятно')});
 ['Ask','Faq','Features','Policy'].forEach(k=>{const el=$('setting'+k);if(el)el.onclick=()=>modal(el.querySelector('strong').textContent,'<p>Раздел справки TopGram будет добавлен позже.</p>',close,'Понятно')});
-async async function renderProfileGifts(){
+async function renderProfileGifts(){
   const area=$('profileGiftsArea');if(!area)return;
   area.classList.add('active');$('postsArea').style.display='none';$('addPost').style.display='none';
   area.innerHTML='<div class="profile-gifts-empty">Загружаем подарки…</div>';
