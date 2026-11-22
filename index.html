@@ -1071,6 +1071,71 @@ body.light .tg-inventory-card{background:#fff;border-color:#e8eaed}
 .tg-admin-form .tg-admin-hint.success{padding:11px;border:1px solid #2c8a68;border-radius:11px;background:#163c32;color:#baf3d9}
 .tg-admin-form .tg-admin-hint.warning{padding:11px;border:1px solid #9a7132;border-radius:11px;background:#45351b;color:#ffe2a8}
 .tg-admin-form .tg-admin-hint.error{padding:11px;border:1px solid #9b4a4a;border-radius:11px;background:#421f26;color:#ffd1d1}
+
+/* Screenshot-matched owner dashboard shortcut cards */
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:26px!important;
+  margin:0 24px 24px!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button{
+  min-width:0!important;
+  min-height:0!important;
+  padding:40px!important;
+  gap:18px!important;
+  border:3px solid #35495d!important;
+  border-radius:42px!important;
+  background:#202f40!important;
+  color:#f5f7fa!important;
+  box-shadow:none!important;
+  justify-content:flex-start!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button>span{
+  display:block!important;
+  min-height:74px!important;
+  font-size:62px!important;
+  line-height:1.05!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button>b{
+  display:block!important;
+  color:#f5f7fa!important;
+  font-size:36px!important;
+  line-height:1.45!important;
+  font-weight:750!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button>small{
+  display:block!important;
+  color:#a9b7c5!important;
+  font-size:32px!important;
+  line-height:1.4!important;
+  font-weight:400!important;
+}
+@media(max-width:600px){
+  #modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts{
+    gap:12px!important;
+    margin:0 4px 18px!important;
+  }
+  #modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button{
+    padding:18px!important;
+    gap:9px!important;
+    border-width:2px!important;
+    border-radius:24px!important;
+  }
+  #modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button>span{
+    min-height:38px!important;
+    font-size:34px!important;
+  }
+  #modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button>b{
+    font-size:19px!important;
+    line-height:1.35!important;
+  }
+  #modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button>small{
+    font-size:16px!important;
+    line-height:1.35!important;
+  }
+}
+
 </style>
 </head>
 <body>
