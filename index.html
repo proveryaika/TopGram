@@ -1067,7 +1067,7 @@ async function tgLoadGiftPackShelf(){
   }catch(error){root.textContent='Не удалось загрузить полку: '+error.message}
 }
 function openGiftPacksAdmin(){
-  if(!topgramGiftAdmin)return toast('Доступ только администратору TopGram.');
+  if(!topgramGiftAdmin)return toast('Админ-панель доступна только номеру +888 8888.');
   modal('TopGram · наборы подарков',
     '<div class="tg-admin-form"><p class="tg-admin-hint">Загрузи ZIP с pack.json и Lottie/TGS. После проверки архив появится на полке. Из полки можно импортировать подарки в каталог; повторный импорт не создаёт дубликаты.</p>'+
     '<label for="tgPackFile">ZIP-архив набора</label><input id="tgPackFile" type="file" accept=".zip,application/zip">'+
@@ -1189,7 +1189,7 @@ function wireTopgramGiftImages(root){
 }
 
 function openGiftAdmin(){
-  if(!topgramGiftAdmin)return toast('Админ-панель доступна только владельцу TopGram.');
+  if(!topgramGiftAdmin)return toast('Админ-панель доступна только номеру +888 8888.');
   const gifts=topgramGiftRows.filter(g=>g.gift_type!=='collectible');
   const active=gifts.filter(g=>g.is_active).length;
   const nft=gifts.filter(g=>g.upgrade_enabled).length;
@@ -1230,7 +1230,7 @@ function openGiftAdmin(){
   render();
 }
 function openGiftEditor(selectedGiftId=null){
-  if(!topgramGiftAdmin)return toast('Админ-панель доступна только владельцу TopGram.');
+  if(!topgramGiftAdmin)return toast('Админ-панель доступна только номеру +888 8888.');
   const gifts=topgramGiftRows.filter(g=>g.gift_type!=='collectible');
   if(!gifts.length)return toast('Сначала импортируй обычные подарки через набор ZIP.');
   const options=gifts.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.gift_name)+'</option>').join('');
