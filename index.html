@@ -1154,7 +1154,7 @@ function openGiftAdmin(){
       gift._upgradeAttributes={};
       for(const key of ['model','pattern','background']){
         const saved=Array.isArray(configured[key])&&configured[key].length?configured[key]:loaded[key];
-        gift._upgradeAttributes[key]=saved.map(v=>typeof v==='string'?{name:v,rarity_percent:1}:{name:v.name,rarity_percent:Number(v.rarity_percent)||1});
+        gift._upgradeAttributes[key]=saved.map(v=>typeof v==='string'?{name:v,rarity_percent:1}:{name:v.name,rarity_percent:Number(v.rarity_percent)||1,...(v.animation_path?{animation_path:v.animation_path}:{})});
       }
       $('tgUpgradeAttributeSummary').textContent='Моделей: '+gift._upgradeAttributes.model.length+' · узоров: '+gift._upgradeAttributes.pattern.length+' · фонов: '+gift._upgradeAttributes.background.length+'. Редкость учитывается при случайном улучшении.';
     }catch(e){$('tgUpgradeAttributeSummary').textContent='Не удалось загрузить параметры: '+e.message;gift._upgradeAttributes=null}
