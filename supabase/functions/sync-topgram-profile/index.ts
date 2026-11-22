@@ -72,7 +72,18 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (publicProfileError) throw publicProfileError;
 
-    return jsonResponse({ success: true, display_number: publicProfile?.display_number ?? null });
+    const { data: wallet, error: walletError } = await admin
+      .from("topgram_wallets")
+      .select("stars")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (walletError) throw walletError;
+
+    return jsonResponse({
+      success: true,
+      display_number: publicProfile?.display_number ?? null,
+      wallet_stars: wallet?.stars ?? 0,
+    });
   } catch {
     return jsonResponse({ error: "Не удалось сохранить профиль" }, 500);
   }
