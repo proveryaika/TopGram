@@ -1210,6 +1210,7 @@ function openGiftAdmin(){
         '<button type="button" data-admin-action="stars"><span>⭐</span><b>Баланс Stars</b><small>Начисление пользователям</small></button>'+
         '<button type="button" data-admin-action="usernames"><span>✦</span><b>Коллекционные имена</b><small>Назначение коллекционных юзернеймов</small></button>'+
         '<button type="button" data-admin-action="stats"><span>📊</span><b>Статистика</b><small>Пользователи и балансы</small></button>'+
+        '<button type="button" data-admin-action="craft"><span>⚒</span><b>Рецепты крафта</b><small>Ингредиенты, результат и комиссия Stars</small></button>'+
       '</div>'+
       '<div class="tg-admin-section-title">Каталог TopGram</div>'+
       '<div class="tg-admin-catalog-tools"><input id="tgAdminGiftSearch" type="search" placeholder="Поиск подарка по названию…"><select id="tgAdminGiftFilter"><option value="all">Все подарки</option><option value="active">В каталоге</option><option value="hidden">Скрытые</option><option value="nft">С NFT-улучшением</option></select></div>'+
@@ -1229,12 +1230,32 @@ function openGiftAdmin(){
   $('tgAdminGiftSearch').oninput=render;$('tgAdminGiftFilter').onchange=render;
   $('tgAdminRefresh').onclick=async()=>{const b=$('tgAdminRefresh');b.disabled=true;try{await loadTopgramGiftAdmin();close();openGiftAdmin()}finally{b.disabled=false}};
   $('tgAdminNewPack').onclick=openGiftPacksAdmin;
-  $('modalBody').querySelectorAll('[data-admin-action]').forEach(btn=>btn.onclick=()=>({packs:openGiftPacksAdmin,stars:openAdminGrantStars,usernames:openAdminCollectible,stats:openAdminStats}[btn.dataset.adminAction]||(()=>{}))());
+  $('modalBody').querySelectorAll('[data-admin-action]').forEach(btn=>btn.onclick=()=>({packs:openGiftPacksAdmin,stars:openAdminGrantStars,usernames:openAdminCollectible,stats:openAdminStats,craft:openGiftCraftAdmin}[btn.dataset.adminAction]||(()=>{}))());
   render();
   tgGiftApi('admin_dashboard').then(data=>{
     const s=data.stats||{},root=$('tgAdminExtraMetrics');if(!root)return;
     root.innerHTML='<div><small>Наборы ZIP</small><b>'+Number(s.packs||0).toLocaleString('ru-RU')+'</b></div><div><small>В инвентарях</small><b>'+Number(s.inventory_items||0).toLocaleString('ru-RU')+'</b></div><div><small>Объявления</small><b>'+Number(s.active_listings||0).toLocaleString('ru-RU')+'</b></div><div><small>Передачи NFT</small><b>'+Number(s.transfers||0).toLocaleString('ru-RU')+'</b></div>';
   }).catch(()=>{});
+}
+function openGiftCraftAdmin(){
+  if(!topgramGiftAdmin)return toast('Админ-панель доступна только номеру +888 8888.');
+  const gifts=topgramGiftRows.filter(g=>g.gift_type!=='collectible');
+  if(!gifts.length)return toast('Сначала добавь подарки в каталог.');
+  const options=gifts.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.gift_name)+' · '+esc(g.gift_key)+'</option>').join('');
+  modal('TopGram · рецепт крафта','<div class="tg-admin-form">'+
+    '<label for="tgCraftKey">ID рецепта</label><input id="tgCraftKey" maxlength="48" placeholder="spring_bundle">'+
+    '<label for="tgCraftTitle">Название</label><input id="tgCraftTitle" maxlength="100" placeholder="Весенний набор">'+
+    '<label for="tgCraftDescription">Описание</label><textarea id="tgCraftDescription" rows="2" maxlength="500" placeholder="Обмени несколько подарков на один редкий"></textarea>'+
+    '<label for="tgCraftIngredients">Ингредиенты · JSON</label><textarea id="tgCraftIngredients" rows="5" placeholder=\'[{"gift_key":"rose","quantity":3},{"gift_key":"star","quantity":1}]\'></textarea>'+
+    '<p class="tg-admin-hint">Указывай gift_key подарков и количество каждого. Списываются только обычные подарки, NFT не принимаются.</p>'+
+    '<label for="tgCraftResult">Результат</label><select id="tgCraftResult">'+options+'</select>'+
+    '<label for="tgCraftFee">Комиссия Stars</label><input id="tgCraftFee" type="number" min="0" max="1000000000" value="0">'+
+    '<label><input id="tgCraftActive" type="checkbox" checked> Опубликовать рецепт сразу</label></div>',async()=>{
+      let ingredients;try{ingredients=JSON.parse($('tgCraftIngredients').value)}catch(e){return toast('Проверь JSON ингредиентов.')}
+      if(!Array.isArray(ingredients)||!ingredients.length)return toast('Добавь ингредиенты.');
+      const payload={recipe_key:$('tgCraftKey').value.trim().toLowerCase(),title:$('tgCraftTitle').value.trim(),description:$('tgCraftDescription').value.trim(),ingredients,result_gift_id:$('tgCraftResult').value,fee_stars:Number($('tgCraftFee').value),is_active:$('tgCraftActive').checked};
+      try{await tgGiftApi('save_craft_recipe',payload);close();toast('Рецепт сохранён.');openGiftAdmin()}catch(e){toast(e.message)}
+    },'Сохранить рецепт');
 }
 function openGiftEditor(selectedGiftId=null){
   if(!topgramGiftAdmin)return toast('Админ-панель доступна только номеру +888 8888.');
