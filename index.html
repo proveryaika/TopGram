@@ -1091,7 +1091,9 @@ function openGiftTransfer(item){
     catch(e){toast(e.message);$('confirmModal').disabled=false}
   },'Передать');
 }
-function openGiftUpgrade(){toast('Обычные подарки нельзя улучшать. NFT выпускает только владелец TopGram.');}\n\n$('settingGift').querySelector('strong').textContent='Маркет подарков';
+function openGiftUpgrade(){toast('Обычные подарки нельзя улучшать. NFT выпускает только владелец TopGram.');}
+
+$('settingGift').querySelector('strong').textContent='Маркет подарков';
 $('settingGift').onclick=e=>{e.preventDefault();e.stopPropagation();openGiftMarket();};
 if(tgAuthSavedSession())loadTopgramGiftAdmin();
 
