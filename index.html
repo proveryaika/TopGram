@@ -1168,6 +1168,9 @@ body.light .tg-inventory-card{background:#fff;border-color:#e8eaed}
 #modalBackdrop.gift-picker-backdrop.tg-gift-catalog-mode .tg-market-price{font-size:14px!important}
 #modalBackdrop.gift-picker-backdrop.tg-gift-send-mode .modal-actions{display:flex!important}
 @media(max-width:420px){#modalBackdrop.gift-picker-backdrop.tg-gift-catalog-mode .tg-market-catalog{gap:8px!important}#modalBackdrop.gift-picker-backdrop.tg-gift-catalog-mode .tg-market-gift{aspect-ratio:.78!important;padding:8px 5px 12px!important}#modalBackdrop.gift-picker-backdrop.tg-gift-catalog-mode .tg-market-price{font-size:12px!important;padding:5px 8px!important}#modalBackdrop.gift-picker-backdrop.tg-gift-catalog-mode .tg-buy-intro p{font-size:14px!important}}
+
+/* Screenshot-sourced gift artwork sprite */
+.tg-reference-gift-art{background-image:url("data:image/jpeg;base64,SPRITE_PLACEHOLDER")!important;background-size:300% 300%!important;background-position:var(--gift-sprite-x) var(--gift-sprite-y)!important;background-repeat:no-repeat!important;border-radius:0!important}
 </style>
 </head>
 <body>
@@ -2160,6 +2163,9 @@ function tgGiftCardArt(gift,attrs={}){
   const baseUrl=TG_GIFT_ASSET_CDN+'webp/by_name/'+encodeURIComponent(asset)+'.webp';
   const isCollectible=gift.gift_type==='collectible'||!!(attrs.model&&attrs.pattern&&attrs.background);
   if(!isCollectible){
+    const referenceSprite={heart_bow:0,teddy_bear:1,gift_box:2,red_rose:3,birthday_cake:4,flower_bouquet:5,rocket:6,trophy:7,diamond_ring:8};
+    const spriteIndex=referenceSprite[gift.gift_key||''];
+    if(spriteIndex!==undefined)return '<div class="tg-gift-art tg-plain-gift-art tg-reference-gift-art" role="img" aria-label="'+esc(gift.gift_name||'Подарок')+'" style="--gift-sprite-x:'+((spriteIndex%3)*50)+'%;--gift-sprite-y:'+(Math.floor(spriteIndex/3)*50)+'%"></div>';
     if(gift.base_animation_path)return '<div class="tg-gift-art tg-plain-gift-art"><div class="tg-tgs-animation" data-animation-path="'+esc(gift.base_animation_path)+'" style="position:absolute;inset:0;width:100%;height:100%"></div></div>';
     return '<div class="tg-gift-art tg-plain-gift-art"><img loading="lazy" alt="'+esc(gift.gift_name||'Подарок TopGram')+'" src="'+baseUrl+'" data-asset="'+esc(asset)+'" data-slug="'+esc(slug)+'"></div>';
   }
