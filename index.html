@@ -1080,9 +1080,10 @@ body.light .tg-inventory-card{background:#fff;border-color:#e8eaed}
  display:block!important;width:clamp(42px,5.75vw,62px)!important;height:clamp(42px,5.75vw,62px)!important;
  object-fit:contain!important;image-rendering:auto!important;
 }
-#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button[data-admin-action="usernames"]>span img{
- filter:grayscale(1) brightness(0) invert(1)!important;
-}
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button[data-admin-action="stars"]>span img{filter:invert(77%) sepia(89%) saturate(602%) hue-rotate(1deg) brightness(104%) contrast(102%)!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button[data-admin-action="usernames"]>span img,
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button[data-admin-action="stats"]>span img,
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button[data-admin-action="craft"]>span img{filter:brightness(0) invert(1)!important}
 @media(max-width:600px){
  #modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button>span img{
   width:clamp(32px,8vw,42px)!important;height:clamp(32px,8vw,42px)!important
@@ -1352,6 +1353,7 @@ $('settingsAvatar').innerHTML=profileData.photo?'<img alt="Фото профил
 const other=(profileData.accounts||[]).filter(a=>a&&((a.name&&a.name!==profileData.name)||(a.phone&&a.phone!==profileData.phone)));
 $('settingsAccountsGroup').hidden=!other.length;
 $('settingsAccounts').innerHTML=other.map(a=>'<button class="settings-row"><span class="settings-icon blue">◉</span><span><strong>'+esc(a.name||'Аккаунт')+'</strong><small>'+esc(displayPhone(a.phone||''))+'</small></span></button>').join('');
+if(tgAuthSavedSession())void loadTopgramGiftAdmin();
 }
 $('settingsTab').onclick=openSettings;
 $('settingsBack').onclick=()=>{$('settingsView').style.setProperty('display','none','important');$('settingsView').setAttribute('aria-hidden','true');document.documentElement.classList.remove('settings-open');document.body.classList.remove('settings-open');$('app').classList.remove('settings-open');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));$('chatsTab').classList.add('active')};
@@ -1666,6 +1668,11 @@ function ensureGiftAdminButton(){
   };
 }
 async function loadTopgramGiftAdmin(){
+  const session=tgAuthSavedSession();
+  if(!session?.access_token)return;
+  // Keep the entry point available while the server revalidates the owner session.
+  // The button action always calls the protected server endpoint before opening admin.
+  ensureGiftAdminButton();
   const button=$('settingGiftAdmin');
   try{
     const data=await tgGiftApi('list');
@@ -1679,8 +1686,9 @@ async function loadTopgramGiftAdmin(){
       }
     }else if(button){button.hidden=true;button.style.display='none'}
   }catch(error){
-    // A transient profile/username sync error must never delete the owner entry point.
-    if(button&&topgramGiftAdmin){button.hidden=false;button.style.display=''}
+    // A transient network/API failure must not remove the owner entry point.
+    // Actual access is still denied by the server-side is_admin check on click.
+    if(button){button.hidden=false;button.style.display=''}
     console.warn('TopGram gift admin check:',error);
   }
 }
@@ -1773,10 +1781,10 @@ function openGiftAdmin(){
       '</section>'+
       '<section id="tgAdminPacksPanel" style="display:none"><div class="tg-admin-catalog-heading"><div><b>Управление ZIP-наборами</b><small>Загрузка, проверка pack.json, предпросмотр и импорт</small></div><button type="button" id="tgAdminOpenPacks">＋ Загрузить ZIP</button></div><div class="tg-admin-pack-intro">ZIP-полка и редактор наборов открываются отдельно. Импортируй весь набор или отдельные подарки после проверки анимаций.</div></section><section id="tgAdminAttributesPanel" style="display:none"><div class="tg-admin-catalog-heading"><div><b>Коллекционные атрибуты</b><small>Модели, узоры, фоны, редкость и анимации для каждого выпуска NFT</small></div></div><div id="tgAdminAttributeGiftList" class="tg-admin-attribute-gift-list"></div></section>'+
       '<div class="tg-admin-dashboard-actions tg-admin-reference-shortcuts">'+
-        '<button type="button" data-admin-action="stars"><span><img src="https://raw.githubusercontent.com/owpengram/owpengram-server/fd717289860a1076133436e1bcb1adc49d04100f/internal/webclient/dist/assets/img/emoji/2b50.png" alt="Значок звезды" loading="eager"></span><b>Выдать Stars</b><small>Начисление пользователю</small></button>'+
-        '<button type="button" data-admin-action="usernames"><span><img src="https://raw.githubusercontent.com/owpengram/owpengram-server/fd717289860a1076133436e1bcb1adc49d04100f/internal/webclient/dist/assets/img/emoji/2728.png" alt="Значок коллекционных имён" loading="eager"></span><b>Коллекционные имена</b><small>Назначение юзернеймов</small></button>'+
-        '<button type="button" data-admin-action="stats"><span><img src="https://raw.githubusercontent.com/owpengram/owpengram-server/fd717289860a1076133436e1bcb1adc49d04100f/internal/webclient/dist/assets/img/emoji/1f4ca.png" alt="Значок статистики" loading="eager"></span><b>Статистика</b><small>Пользователи и балансы</small></button>'+
-        '<button type="button" data-admin-action="craft"><span><img src="https://raw.githubusercontent.com/owpengram/owpengram-server/fd717289860a1076133436e1bcb1adc49d04100f/internal/webclient/dist/assets/img/emoji/2692.png" alt="Значок рецептов крафта" loading="eager"></span><b>Рецепты крафта</b><small>Настройка рецептов</small></button>'+
+        '<button type="button" data-admin-action="stars"><span><img src="https://raw.githubusercontent.com/gravity-ui/icons/d200295fad1d0cacca7ab0ac5d85e3a3a7f4f4a7/svgs/star-fill.svg" alt="Звезда" loading="eager"></span><b>Выдать Stars</b><small>Начисление пользователю</small></button>'+
+        '<button type="button" data-admin-action="usernames"><span><img src="https://raw.githubusercontent.com/gravity-ui/icons/d200295fad1d0cacca7ab0ac5d85e3a3a7f4f4a7/svgs/sparkles.svg" alt="Коллекционные имена" loading="eager"></span><b>Коллекционные имена</b><small>Назначение юзернеймов</small></button>'+
+        '<button type="button" data-admin-action="stats"><span><img src="https://raw.githubusercontent.com/gravity-ui/icons/d200295fad1d0cacca7ab0ac5d85e3a3a7f4f4a7/svgs/chart-column.svg" alt="Статистика" loading="eager"></span><b>Статистика</b><small>Пользователи и балансы</small></button>'+
+        '<button type="button" data-admin-action="craft"><span><img src="https://raw.githubusercontent.com/gravity-ui/icons/d200295fad1d0cacca7ab0ac5d85e3a3a7f4f4a7/svgs/hammer.svg" alt="Рецепты крафта" loading="eager"></span><b>Рецепты крафта</b><small>Настройка рецептов</small></button>'+
       '</div>'+
     '</div>',close,'Закрыть');
   $('modalBackdrop').classList.add('gift-picker-backdrop');
