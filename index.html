@@ -1072,6 +1072,23 @@ body.light .tg-inventory-card{background:#fff;border-color:#e8eaed}
 .tg-admin-form .tg-admin-hint.warning{padding:11px;border:1px solid #9a7132;border-radius:11px;background:#45351b;color:#ffe2a8}
 .tg-admin-form .tg-admin-hint.error{padding:11px;border:1px solid #9b4a4a;border-radius:11px;background:#421f26;color:#ffd1d1}
 
+/* Render original OwpenGram emoji image assets in admin shortcut tiles */
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button>span{
+ display:flex!important;align-items:center!important;justify-content:flex-start!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button>span img{
+ display:block!important;width:clamp(42px,5.75vw,62px)!important;height:clamp(42px,5.75vw,62px)!important;
+ object-fit:contain!important;image-rendering:auto!important;
+}
+#modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button[data-admin-action="usernames"]>span img{
+ filter:grayscale(1) brightness(0) invert(1)!important;
+}
+@media(max-width:600px){
+ #modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts>button>span img{
+  width:clamp(32px,8vw,42px)!important;height:clamp(32px,8vw,42px)!important
+ }
+}
+
 /* Reference-sized admin dashboard shortcut cards; fluid scaling prevents overflow */
 #modalBackdrop.gift-picker-backdrop .tg-admin-reference-shortcuts{
   display:grid!important;
@@ -1756,10 +1773,10 @@ function openGiftAdmin(){
       '</section>'+
       '<section id="tgAdminPacksPanel" style="display:none"><div class="tg-admin-catalog-heading"><div><b>Управление ZIP-наборами</b><small>Загрузка, проверка pack.json, предпросмотр и импорт</small></div><button type="button" id="tgAdminOpenPacks">＋ Загрузить ZIP</button></div><div class="tg-admin-pack-intro">ZIP-полка и редактор наборов открываются отдельно. Импортируй весь набор или отдельные подарки после проверки анимаций.</div></section><section id="tgAdminAttributesPanel" style="display:none"><div class="tg-admin-catalog-heading"><div><b>Коллекционные атрибуты</b><small>Модели, узоры, фоны, редкость и анимации для каждого выпуска NFT</small></div></div><div id="tgAdminAttributeGiftList" class="tg-admin-attribute-gift-list"></div></section>'+
       '<div class="tg-admin-dashboard-actions tg-admin-reference-shortcuts">'+
-        '<button type="button" data-admin-action="stars"><span>⭐</span><b>Выдать Stars</b><small>Начисление пользователю</small></button>'+
-        '<button type="button" data-admin-action="usernames"><span>✦</span><b>Коллекционные имена</b><small>Назначение юзернеймов</small></button>'+
-        '<button type="button" data-admin-action="stats"><span>📊</span><b>Статистика</b><small>Пользователи и балансы</small></button>'+
-        '<button type="button" data-admin-action="craft"><span>⚒</span><b>Рецепты крафта</b><small>Настройка рецептов</small></button>'+
+        '<button type="button" data-admin-action="stars"><span><img src="https://raw.githubusercontent.com/owpengram/owpengram-server/fd717289860a1076133436e1bcb1adc49d04100f/internal/webclient/dist/assets/img/emoji/2b50.png" alt="Значок звезды" loading="eager"></span><b>Выдать Stars</b><small>Начисление пользователю</small></button>'+
+        '<button type="button" data-admin-action="usernames"><span><img src="https://raw.githubusercontent.com/owpengram/owpengram-server/fd717289860a1076133436e1bcb1adc49d04100f/internal/webclient/dist/assets/img/emoji/2728.png" alt="Значок коллекционных имён" loading="eager"></span><b>Коллекционные имена</b><small>Назначение юзернеймов</small></button>'+
+        '<button type="button" data-admin-action="stats"><span><img src="https://raw.githubusercontent.com/owpengram/owpengram-server/fd717289860a1076133436e1bcb1adc49d04100f/internal/webclient/dist/assets/img/emoji/1f4ca.png" alt="Значок статистики" loading="eager"></span><b>Статистика</b><small>Пользователи и балансы</small></button>'+
+        '<button type="button" data-admin-action="craft"><span><img src="https://raw.githubusercontent.com/owpengram/owpengram-server/fd717289860a1076133436e1bcb1adc49d04100f/internal/webclient/dist/assets/img/emoji/2692.png" alt="Значок рецептов крафта" loading="eager"></span><b>Рецепты крафта</b><small>Настройка рецептов</small></button>'+
       '</div>'+
     '</div>',close,'Закрыть');
   $('modalBackdrop').classList.add('gift-picker-backdrop');
