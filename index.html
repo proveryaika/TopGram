@@ -1425,7 +1425,7 @@ async function openGiftInventory(){
   wireTopgramGiftImages($('modalBody'));
 }
 async function openGiftMarketplace(){
-  let data;try{data=await tgGiftApi('list_marketplace')}catch(error){return toast(error.message)}
+  let data;try{await tgGiftRefreshWallet();data=await tgGiftApi('list_marketplace')}catch(error){return toast(error.message)}
   const listings=data.listings||[];
   const rows=listings.map(listing=>{
     const item=listing.inventory||{},gift=item.gift||{},attrs=item.attributes||{};
