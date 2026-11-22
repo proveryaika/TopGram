@@ -865,7 +865,7 @@ function giftImageMarkup(asset,slug){
 function wireTopgramGiftImages(root){
   root.querySelectorAll('.tg-gift-art img').forEach(img=>{
     const asset=img.dataset.asset,slug=img.dataset.slug;
-    const sources=[img.dataset.modelSrc,img.dataset.fallback,
+    const sources=[img.dataset.fallback,
       'https://cdn.jsdelivr.net/gh/ssamy2/TelegramGiftsAssests@main/webp/by_name/'+asset+'.webp',
       'https://fastly.jsdelivr.net/gh/ssamy2/TelegramGiftsAssests@main/webp/by_name/'+asset+'.webp',
       'https://raw.githubusercontent.com/ssamy2/TelegramGiftsAssests/main/webp/by_name/'+asset+'.webp',
