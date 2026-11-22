@@ -339,9 +339,51 @@ html.settings-open body > #settingsView{display:flex!important;visibility:visibl
 .gift-picker-backdrop .gift-item{min-height:126px;border-radius:17px;background:#202f40;border-color:#34485a}
 .gift-picker-backdrop .gift-item span{font-size:38px}.gift-picker-backdrop .gift-item.selected{border:2px solid #2aabee;background:#1b3a50}
 .gift-picker-backdrop .gift-note{font-size:12px;line-height:1.5;margin:18px 4px;color:#8292a2}
+
+/* TopGram sign-in screen */
+#tgAuth{position:fixed;inset:0;z-index:2147483600;background:#17212b;color:#f5f7fa;display:grid;place-items:center;padding:24px;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+#tgAuth[hidden]{display:none!important}
+.tg-auth-card{width:min(420px,100%);text-align:center}
+.tg-auth-logo{width:104px;height:104px;border-radius:50%;margin:0 auto 26px;background:#2aabee;display:grid;place-items:center;box-shadow:0 10px 32px #0003}
+.tg-auth-logo svg{width:58px;height:58px;fill:white}
+.tg-auth-title{font-size:30px;font-weight:750;letter-spacing:-.5px;margin:0 0 12px}
+.tg-auth-copy{font-size:16px;line-height:1.5;color:#a8b7c5;margin:0 auto 32px;max-width:330px}
+.tg-auth-label{display:block;text-align:left;color:#9eacb9;font-size:14px;margin:18px 0 8px}
+.tg-auth-input{width:100%;height:54px;border:1px solid #34485a;border-radius:13px;background:#202f40;color:#fff;padding:0 16px;font-size:18px;outline:none}
+.tg-auth-input:focus{border-color:#2aabee}
+.tg-auth-btn{width:100%;height:52px;border:0;border-radius:13px;background:#2aabee;color:#fff;font-size:16px;font-weight:700;margin-top:18px}
+.tg-auth-btn:disabled{opacity:.55}
+.tg-auth-back{border:0;background:transparent;color:#8fcfff;font-size:15px;margin-top:18px;padding:10px}
+.tg-auth-error{min-height:22px;color:#ff8585;font-size:14px;margin:12px 0 0}
+.tg-auth-country{display:flex;gap:8px}
+.tg-auth-country select{width:105px;flex:none}
+.tg-auth-note{font-size:12px;color:#718394;line-height:1.45;margin-top:22px}
+body.tg-auth-active{overflow:hidden}
+@media(max-height:620px){.tg-auth-logo{width:72px;height:72px;margin-bottom:14px}.tg-auth-logo svg{width:42px;height:42px}.tg-auth-title{font-size:25px}.tg-auth-copy{margin-bottom:16px}.tg-auth-btn{margin-top:12px}}
+
 </style>
 </head>
 <body>
+<section id="tgAuth" aria-label="Вход в TopGram">
+  <div class="tg-auth-card">
+    <div class="tg-auth-logo" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M52.8 12.1 44.7 51c-.6 2.8-2.2 3.5-4.5 2.2L27.8 43.8l-6 5.8c-.7.7-1.3 1.3-2.7 1.3l1-13.1 23.8-21.5c1-.9-.2-1.4-1.5-.5L13 34.1 1.1 30.4c-2.6-.8-2.6-2.6.6-3.8L48.2 8.8c2.1-.8 4 .5 3.3 3.3Z"/></svg></div>
+    <h1 class="tg-auth-title">TopGram</h1>
+    <p class="tg-auth-copy" id="tgAuthCopy">Общайтесь и оставайтесь на связи. Войдите в свой аккаунт TopGram.</p>
+    <div id="tgAuthWelcome"><button class="tg-auth-btn" id="tgAuthStart">Начать общение</button><p class="tg-auth-note">Для входа используется постоянный виртуальный номер TopGram. Коды подтверждения приходят в Telegram-бот.</p></div>
+    <div id="tgAuthPhone" hidden>
+      <label class="tg-auth-label" for="tgAuthNumber">Номер TopGram</label>
+      <div class="tg-auth-country"><select class="tg-auth-input" id="tgAuthPrefix" aria-label="Код страны"><option value="7">+7</option><option value="1">+1</option></select><input class="tg-auth-input" id="tgAuthNumber" inputmode="numeric" autocomplete="tel" placeholder="777 777 77 77" maxlength="14"></div>
+      <button class="tg-auth-btn" id="tgAuthSend">Получить код</button><button class="tg-auth-back" id="tgAuthPhoneBack">Назад</button>
+    </div>
+    <div id="tgAuthCode" hidden>
+      <label class="tg-auth-label" for="tgAuthOtp">Код из Telegram</label>
+      <input class="tg-auth-input" id="tgAuthOtp" inputmode="numeric" autocomplete="one-time-code" placeholder="••••••" maxlength="6">
+      <button class="tg-auth-btn" id="tgAuthVerify">Продолжить</button><button class="tg-auth-back" id="tgAuthCodeBack">Изменить номер</button>
+    </div>
+    <p class="tg-auth-error" id="tgAuthError" role="status"></p>
+  </div>
+</section>
+
 <div class="app" id="app">
 <header><div class="brand">TopGram</div><button class="header-btn" id="searchToggle" aria-label="Поиск"></button><button class="header-btn" id="menuBtn" aria-label="Меню">⋮</button></header><div class="dropdown-menu" id="chatDropdown"><button class="dropdown-item" id="themeMenuItem"><span class="dropdown-icon" id="themeMenuIcon"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M16 2v4m0 20v4M2 16h4m20 0h4M6 6l3 3m14 14 3 3M26 6l-3 3M9 23l-3 3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span><span id="themeMenuText">Дневной режим</span></button><div class="dropdown-separator"></div><button class="dropdown-item" id="createGroupMenu"><span class="dropdown-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="12" cy="10" r="5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M2.5 27c0-5 4-8 9.5-8s9.5 3 9.5 8M22 6a5 5 0 0 1 0 9.5M24 20c3.5 1 5.5 3.2 5.5 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span>Создать группу</button><button class="dropdown-item" id="favoritesMenu"><span class="dropdown-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 4h18v25l-9-6-9 6V4Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg></span>Избранное</button></div>
 <div class="search-wrap" id="searchWrap"><input class="search" id="search" placeholder="Поиск чатов и пользователей…" autocomplete="off"></div>
@@ -408,6 +450,27 @@ html.settings-open body > #settingsView{display:flex!important;visibility:visibl
 <div class="modal-backdrop" id="modalBackdrop"><div class="modal" role="dialog" aria-modal="true"><h2 id="modalTitle"></h2><div id="modalBody"></div><div class="modal-actions"><button id="cancelModal">Отмена</button><button class="primary" id="confirmModal">Готово</button></div></div></div><div class="notice" id="notice"></div><script>
 (()=>{
 const $=id=>document.getElementById(id), oldDemo=new Set(['alex','team','maria','design']);
+
+/* TopGram authentication gate: connect to the deployed Supabase Edge Functions. */
+const TG_SUPABASE_URL='https://ycfxzesdzilywqqeevpz.supabase.co';
+const TG_SUPABASE_ANON_KEY='PASTE_SUPABASE_PUBLISHABLE_KEY_HERE';
+const tgAuthSessionKey='topgram-auth-session';
+const tgAuth=$('tgAuth');
+let tgAuthNumber='';
+function tgAuthDigits(){return ( $('tgAuthPrefix').value + $('tgAuthNumber').value.replace(/\\D/g,'') ).slice(0,11)}
+function tgAuthShow(step){$('tgAuthWelcome').hidden=step!=='welcome';$('tgAuthPhone').hidden=step!=='phone';$('tgAuthCode').hidden=step!=='code';$('tgAuthError').textContent='';$('tgAuthCopy').textContent=step==='welcome'?'Общайтесь и оставайтесь на связи. Войдите в свой аккаунт TopGram.':step==='phone'?'Введите постоянный виртуальный номер, который вы получили у бота TopGram.':'Введите шестизначный код, отправленный ботом TopGram в Telegram.'}
+function tgAuthEnter(){tgAuth.hidden=true;document.body.classList.remove('tg-auth-active')}
+function tgAuthSavedSession(){try{const x=JSON.parse(localStorage.getItem(tgAuthSessionKey)||'null');return x&&x.access_token&&x.expires_at>Date.now()/1000+30?x:null}catch{return null}}
+if(tgAuth){document.body.classList.add('tg-auth-active');if(tgAuthSavedSession())tgAuthEnter();else tgAuthShow('welcome')}
+$('tgAuthStart').onclick=()=>tgAuthShow('phone');
+$('tgAuthPhoneBack').onclick=()=>tgAuthShow('welcome');
+$('tgAuthCodeBack').onclick=()=>tgAuthShow('phone');
+$('tgAuthNumber').addEventListener('input',()=>{$('tgAuthNumber').value=$('tgAuthNumber').value.replace(/[^0-9 ]/g,'').slice(0,14)});
+async function tgAuthCall(name,payload){if(!TG_SUPABASE_ANON_KEY||TG_SUPABASE_ANON_KEY.includes('PASTE_'))throw new Error('Нужно добавить публичный ключ Supabase в настройки TopGram.');const response=await fetch(TG_SUPABASE_URL+'/functions/v1/'+name,{method:'POST',headers:{'Content-Type':'application/json','apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+TG_SUPABASE_ANON_KEY},body:JSON.stringify(payload)});let data={};try{data=await response.json()}catch{}if(!response.ok)throw new Error(data.message||data.error||'Ошибка сервера. Попробуй позже.');return data}
+$('tgAuthSend').onclick=async()=>{const digits=tgAuthDigits();if(!/^([17])[0-9]{10}$/.test(digits))return $('tgAuthError').textContent='Проверь номер: нужно 10 цифр после кода страны.';tgAuthNumber=digits;$('tgAuthSend').disabled=true;$('tgAuthSend').textContent='Отправляем…';try{await tgAuthCall('request-login-code',{number:digits});tgAuthShow('code');$('tgAuthOtp').focus()}catch(e){$('tgAuthError').textContent=e.message}finally{$('tgAuthSend').disabled=false;$('tgAuthSend').textContent='Получить код'}};
+$('tgAuthOtp').addEventListener('input',()=>{$('tgAuthOtp').value=$('tgAuthOtp').value.replace(/\\D/g,'').slice(0,6)});
+$('tgAuthVerify').onclick=async()=>{const code=$('tgAuthOtp').value.trim();if(!/^\\d{6}$/.test(code))return $('tgAuthError').textContent='Введи шестизначный код.';$('tgAuthVerify').disabled=true;$('tgAuthVerify').textContent='Проверяем…';try{const data=await tgAuthCall('verify-login-code',{number:tgAuthNumber,code});if(!data.session)throw new Error(data.error||'Сервер не вернул сессию.');localStorage.setItem(tgAuthSessionKey,JSON.stringify(data.session));tgAuthEnter()}catch(e){$('tgAuthError').textContent=e.message}finally{$('tgAuthVerify').disabled=false;$('tgAuthVerify').textContent='Продолжить'}};
+
 // Keep settings overlay outside the app stacking/overflow context.
 const settingsNode=document.getElementById('settingsView');if(settingsNode&&settingsNode.parentElement!==document.body)document.body.appendChild(settingsNode);
 if(settingsNode){settingsNode.style.setProperty('display','none','important');settingsNode.setAttribute('aria-hidden','true')}document.body.classList.remove('settings-open','account-open','modal-open');
