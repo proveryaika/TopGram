@@ -451,6 +451,8 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 .tg-admin-section-title{font-weight:650;margin-top:18px;padding-top:14px;border-top:1px solid #ffffff14}
 .tg-admin-existing{display:flex;flex-direction:column;gap:3px;padding:11px 0;border-bottom:1px solid #ffffff12}
 .tg-admin-existing small{color:#9aa8b5}
+/* OwpenGram-style gift catalogue */
+.tg-buy-catalog-body{padding-top:0!important}.tg-buy-intro{text-align:center;padding:0 8px 12px;color:#f4f6f9}.tg-buy-hero{width:88px;height:88px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;background:#e95a84;font-size:40px}.tg-buy-intro h2{font-size:25px;margin:12px 0 24px}.tg-buy-intro p{font-size:16px;line-height:1.32;margin:0 auto 18px;max-width:520px}.tg-buy-tabs{display:flex;justify-content:center;gap:12px;margin:14px 0 20px}.tg-buy-tabs button{border:0;border-radius:24px;background:transparent;color:#aab5c0;padding:9px 18px;font-size:16px;font-weight:650}.tg-buy-tabs button.active{background:#263746;color:#f4f6f9}.tg-market-catalog{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}.tg-market-gift{position:relative;min-width:0;min-height:145px;border:0!important;border-radius:18px!important;background:#202b38!important;padding:12px 8px 48px!important;display:flex;align-items:center;justify-content:center}.tg-market-art{width:100%;aspect-ratio:1;display:grid;place-items:center}.tg-market-art .tg-gift-art{width:100%;height:100%;max-width:108px;max-height:108px;background:transparent!important}.tg-market-price{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);white-space:nowrap;border-radius:24px;background:#3b3b3b;color:#f3b84c;padding:6px 12px;font-size:14px;font-weight:700}.tg-gift-send-body .tg-send-step{text-align:center;display:flex;flex-direction:column;gap:12px}.tg-send-step-art{height:150px;display:grid;place-items:center}.tg-send-step-art .tg-gift-art{width:140px;height:140px;background:transparent!important}.tg-send-step h3{margin:0;font-size:20px}.tg-send-step-price{font-size:18px;color:#f3b84c;font-weight:700;margin-bottom:8px}.tg-send-step label{text-align:left;font-size:14px;font-weight:650;margin-top:5px}.tg-send-step input:not([type=checkbox]),.tg-send-step textarea{width:100%;box-sizing:border-box;border:1px solid #3b5063;border-radius:12px;padding:13px;background:#17212b;color:#fff;font:inherit}.tg-send-step .tg-gift-option{display:flex;align-items:center;gap:9px}@media(max-width:380px){.tg-market-catalog{gap:7px!important}.tg-market-gift{min-height:126px;padding:8px 5px 43px!important}.tg-market-price{font-size:12px;padding:5px 9px}.tg-buy-intro p{font-size:14px}}
 .tg-market-catalog{grid-template-columns:repeat(2,minmax(0,1fr))}
 .tg-market-gift{min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 8px}
 .tg-market-gift b{font-size:14px;text-align:center}
@@ -2166,56 +2168,31 @@ function tgRandomGiftValue(key,current){
 }
 async function openGiftMarket(){
   let data;try{data=await tgGiftApi('list')}catch(e){return toast(e.message)}
-  const gifts=(data.gifts||[]).filter(g=>g.gift_type==='regular');
-  const cards=gifts.map(g=>'<button type="button" class="gift-item tg-market-gift" data-gift-id="'+esc(g.id)+'">'+tgGiftCardArt(g,{})+'<b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐</small></button>').join('');
-  modal('Подарки',
-    '<div class="gift-picker-head"><div><strong>Подарки</strong><small>Выбери подарок, чтобы отправить его пользователю</small></div><button type="button" id="tgOpenNftMarket">✦ NFT рынок</button></div>'+
-    '<div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div>'+
-    '<div class="gift-catalog tg-market-catalog">'+(cards||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong></div>')+'</div>'+
-    '<div class="tg-send-gift-form"><label for="tgGiftRecipient">Получатель · @username</label><input id="tgGiftRecipient" maxlength="25" placeholder="Оставь пустым, чтобы оставить себе" autocapitalize="none">'+
-    '<label for="tgGiftMessage">Сообщение к подарку</label><textarea id="tgGiftMessage" maxlength="255" rows="2" placeholder="Напиши пожелание (необязательно)"></textarea>'+
-    '<label class="tg-gift-option"><input id="tgGiftHideName" type="checkbox"> Скрыть моё имя от других</label>'+
-    '<label class="tg-gift-option" id="tgGiftPrepaidWrap" hidden><input id="tgGiftPrepaid" type="checkbox"> Сразу оплатить улучшение до NFT</label></div>',
-    async()=>{
-      const selected=$('modalBody').querySelector('.tg-market-gift.selected');if(!selected)return toast('Сначала выбери подарок.');
-      const gift=gifts.find(g=>g.id===selected.dataset.giftId);if(!gift)return;
-      const recipient=$('tgGiftRecipient').value.trim().replace(/^@/,'');
-      const message=$('tgGiftMessage').value.trim();
-      const prepaid=$('tgGiftPrepaid').checked;
-      const hideName=$('tgGiftHideName').checked;
-      const total=Number(gift.price_stars)+(prepaid?Number(gift.upgrade_price_stars||0):0);
-      if(recipient&&!/^[a-z0-9_]{5,24}$/i.test(recipient))return toast('Проверь юзернейм получателя.');
-      if(message.length>255)return toast('Сообщение слишком длинное.');
-      if(topgramStars<total)return toast('Недостаточно Stars.');
-      $('confirmModal').disabled=true;
-      try{
-        const result=await tgGiftApi('buy',{gift_id:gift.id,recipient_username:recipient,message,hide_name:hideName,prepaid_upgrade:prepaid});
-        const wallet=await tgGiftRefreshWallet();close();
-        toast((recipient?'Подарок отправлен пользователю @'+recipient:'Подарок добавлен в твой профиль')+'. Остаток: '+wallet.stars.toLocaleString('ru-RU')+' ⭐');
-        if(!recipient)openGiftInventory();
-      }catch(e){toast(e.message);$('confirmModal').disabled=false}
-    },'Отправить подарок');
-  $('tgOpenNftMarket').onclick=openGiftMarketplace;
-  $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
-  const updateSelected=()=>{
-    const selected=$('modalBody').querySelector('.tg-market-gift.selected');
-    const gift=selected?gifts.find(g=>g.id===selected.dataset.giftId):null;
-    const wrap=$('tgGiftPrepaidWrap');
-    const prepaid=$('tgGiftPrepaid')?.checked===true;
-    const canPrepay=!!(gift&&gift.upgrade_enabled&&Number(gift.upgrade_issued_count)+Number(gift.upgrade_reserved_count||0)<Number(gift.upgrade_total_supply));
-    if(wrap)wrap.hidden=!canPrepay;
-    if(!canPrepay&&$('tgGiftPrepaid'))$('tgGiftPrepaid').checked=false;
-    const total=gift?Number(gift.price_stars)+(prepaid&&canPrepay?Number(gift.upgrade_price_stars||0):0):0;
-    $('confirmModal').disabled=!gift;
-    $('confirmModal').textContent=gift?'Отправить «'+String(gift.gift_name||'Подарок')+'» за '+total.toLocaleString('ru-RU')+' ⭐':'Сначала выбери подарок';
-    $('confirmModal').dataset.giftId=gift?gift.id:'';
+  const gifts=(data.gifts||[]).filter(g=>g.is_active!==false);
+  let activeTab='all';
+  const renderCatalog=()=>{
+    const shown=activeTab==='collectible'?gifts.filter(g=>g.gift_type==='collectible'||g.upgrade_enabled===true):gifts;
+    const cards=shown.map(g=>'<button type="button" class="gift-item tg-market-gift" data-gift-id="'+esc(g.id)+'"><span class="tg-market-art">'+tgGiftCardArt(g,{})+'</span><span class="tg-market-price">⭐ '+Number(g.price_stars||0).toLocaleString('ru-RU')+'</span></button>').join('');
+    $('tgGiftCatalogGrid').innerHTML=cards||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong></div>';
+    $('tgGiftCatalogGrid').querySelectorAll('.tg-market-gift').forEach(b=>b.onclick=()=>{const gift=gifts.find(g=>g.id===b.dataset.giftId);if(gift)openGiftSendStep(gift)});
+    wireTopgramGiftImages($('tgGiftCatalogGrid'));
   };
-  $('modalBody').querySelectorAll('.tg-market-gift').forEach(b=>b.onclick=()=>{
-    $('modalBody').querySelectorAll('.tg-market-gift').forEach(x=>x.classList.remove('selected'));
-    b.classList.add('selected');updateSelected();
-  });
-  $('tgGiftPrepaid').onchange=updateSelected;
-  $('confirmModal').disabled=true;wireTopgramGiftImages($('modalBody'));
+  modal('Купить подарок','<div class="tg-buy-intro"><div class="tg-buy-hero">🎁</div><h2>Купить подарок</h2><p>Подарок себе можно добавить в профиль или отложить.</p><p>Редкий подарок можно превратить в коллекционный и затем подарить другому пользователю.</p></div><div class="tg-buy-tabs"><button type="button" class="active" id="tgGiftTabAll">Все</button><button type="button" id="tgGiftTabCollectible">Коллекционные</button></div><div class="gift-catalog tg-market-catalog" id="tgGiftCatalogGrid"></div>',close,'Назад');
+  $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body','tg-buy-catalog-body');$('confirmModal').style.display='none';
+  $('tgGiftTabAll').onclick=()=>{activeTab='all';$('tgGiftTabAll').classList.add('active');$('tgGiftTabCollectible').classList.remove('active');renderCatalog()};
+  $('tgGiftTabCollectible').onclick=()=>{activeTab='collectible';$('tgGiftTabCollectible').classList.add('active');$('tgGiftTabAll').classList.remove('active');renderCatalog()};
+  renderCatalog();
+  function openGiftSendStep(gift){
+    modal('Отправить подарок','<div class="tg-send-step"><div class="tg-send-step-art">'+tgGiftCardArt(gift,{})+'</div><h3>'+esc(gift.gift_name||'Подарок')+'</h3><div class="tg-send-step-price">⭐ '+Number(gift.price_stars||0).toLocaleString('ru-RU')+'</div><label for="tgGiftRecipient">Получатель · @username</label><input id="tgGiftRecipient" maxlength="25" placeholder="Оставь пустым, чтобы оставить себе" autocapitalize="none"><label for="tgGiftMessage">Сообщение к подарку</label><textarea id="tgGiftMessage" maxlength="255" rows="3" placeholder="Напиши пожелание (необязательно)"></textarea><label class="tg-gift-option"><input id="tgGiftHideName" type="checkbox"> Скрыть моё имя от других</label><label class="tg-gift-option" id="tgGiftPrepaidWrap" '+(gift.upgrade_enabled?'':'hidden')+'><input id="tgGiftPrepaid" type="checkbox"> Сразу оплатить улучшение до NFT · '+Number(gift.upgrade_price_stars||0).toLocaleString('ru-RU')+' ⭐</label></div>',async()=>{
+      const recipient=$('tgGiftRecipient').value.trim().replace(/^@/,'');const message=$('tgGiftMessage').value.trim();const prepaid=$('tgGiftPrepaid')?.checked===true;const hideName=$('tgGiftHideName').checked;
+      const canPrepay=gift.upgrade_enabled&&Number(gift.upgrade_issued_count)+Number(gift.upgrade_reserved_count||0)<Number(gift.upgrade_total_supply);const total=Number(gift.price_stars)+(prepaid&&canPrepay?Number(gift.upgrade_price_stars||0):0);
+      if(recipient&&!/^[a-z0-9_]{5,24}$/i.test(recipient))return toast('Проверь юзернейм получателя.');if(message.length>255)return toast('Сообщение слишком длинное.');if(topgramStars<total)return toast('Недостаточно Stars.');
+      $('confirmModal').disabled=true;try{await tgGiftApi('buy',{gift_id:gift.id,recipient_username:recipient,message,hide_name:hideName,prepaid_upgrade:prepaid&&canPrepay});const wallet=await tgGiftRefreshWallet();close();toast((recipient?'Подарок отправлен пользователю @'+recipient:'Подарок добавлен в твой профиль')+'. Остаток: '+wallet.stars.toLocaleString('ru-RU')+' ⭐');if(!recipient)openGiftInventory()}catch(e){toast(e.message);$('confirmModal').disabled=false}
+    },'Отправить за '+Number(gift.price_stars||0).toLocaleString('ru-RU')+' ⭐');
+    $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body','tg-gift-send-body');const prepaid=$('tgGiftPrepaid');
+    if(prepaid)prepaid.onchange=()=>{const valid=gift.upgrade_enabled&&Number(gift.upgrade_issued_count)+Number(gift.upgrade_reserved_count||0)<Number(gift.upgrade_total_supply);const sum=Number(gift.price_stars)+(prepaid.checked&&valid?Number(gift.upgrade_price_stars||0):0);$('confirmModal').textContent='Отправить за '+sum.toLocaleString('ru-RU')+' ⭐'};
+    wireTopgramGiftImages($('modalBody'));
+  }
 }
 async function openGiftInventory(){
   let data;try{data=await tgGiftRefreshWallet()}catch(e){return toast(e.message)}
