@@ -540,6 +540,44 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 .tg-real-pattern{display:block!important;visibility:visible!important;position:absolute;z-index:3;width:76%;height:76%;background-image:var(--tg-pattern-image);background-size:cover;background-position:center;opacity:.82;mix-blend-mode:screen;-webkit-mask-image:var(--tg-gift-mask);mask-image:var(--tg-gift-mask);-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;mask-position:center;mask-size:contain;pointer-events:none}
 .tg-real-composite .tg-real-model{display:block!important}
 .tg-real-composite .tg-real-pattern{display:block!important}
+
+/* Strong override: the legacy collectible rule hid every direct gift image. */
+body .tg-gift-art.tg-collectible-art>img.tg-real-model{
+  display:block!important;visibility:visible!important;opacity:1!important;
+  width:76%!important;height:76%!important;max-width:76%!important;max-height:76%!important;
+  position:relative!important;z-index:2!important;object-fit:contain!important;
+}
+body .tg-gift-art.tg-collectible-art>.tg-real-pattern{
+  display:block!important;visibility:visible!important;opacity:.78!important;
+  position:absolute!important;z-index:3!important;pointer-events:none!important;
+  clip-path:polygon(50% 3%,72% 11%,89% 29%,96% 52%,84% 78%,65% 96%,35% 96%,16% 78%,4% 52%,11% 29%,28% 11%);
+  -webkit-clip-path:polygon(50% 3%,72% 11%,89% 29%,96% 52%,84% 78%,65% 96%,35% 96%,16% 78%,4% 52%,11% 29%,28% 11%);
+}
+.tg-real-composite .tg-real-model{display:block!important;visibility:visible!important;opacity:1!important}
+.tg-real-composite .tg-real-pattern{display:block!important;visibility:visible!important;opacity:.78!important}
+/* Telegram-inspired market and inventory surfaces */
+.gift-picker-body{padding:0!important;background:var(--tg-panel,#fff)!important}
+.gift-picker-head{display:flex;align-items:center;justify-content:space-between;padding:17px 18px 12px}
+.gift-picker-head strong{font-size:18px;font-weight:750;letter-spacing:-.25px}
+.gift-picker-head small{display:block;margin-top:4px;color:var(--tg-muted,#8b929b);font-size:12px}
+.tg-market-balance{margin:0 16px 15px;padding:13px 15px;border-radius:15px;background:linear-gradient(110deg,#fff8d8,#fff1b5);color:#72520a;display:flex;align-items:center;justify-content:space-between;font-size:13px}
+.tg-market-balance b{font-size:17px;color:#a87900}
+.gift-section-title{padding:0 18px 10px;font-size:13px;font-weight:700;color:var(--tg-text,#222)}
+.tg-market-catalog{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px!important;padding:0 14px 16px}
+.tg-market-catalog .tg-market-gift{min-width:0;border:1px solid var(--tg-border,#e8eaed)!important;border-radius:17px!important;padding:10px!important;background:var(--tg-card,#fff)!important;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .16s,background .16s,transform .16s}
+.tg-market-catalog .tg-market-gift.selected{border:2px solid #3390ec!important;background:#edf6ff!important;transform:translateY(-1px)}
+.tg-market-cift .tg-real-composite,.tg-market-gift .tg-real-composite{width:100%;height:auto;aspect-ratio:1/1;border-radius:13px!important}
+.tg-market-gift b{font-size:13px;line-height:1.25;color:var(--tg-text,#222)}
+.tg-market-gift small{font-size:11px;color:var(--tg-muted,#89919b)}
+.tg-inventory-list{display:flex;flex-direction:column;gap:10px;padding:0 14px 16px}
+.tg-inventory-card{display:flex;align-items:center;gap:13px;padding:11px;border:1px solid var(--tg-border,#e8eaed);border-radius:16px;background:var(--tg-card,#fff)}
+.tg-inventory-card>.tg-real-composite{width:104px;height:104px;flex:0 0 104px;border-radius:14px}
+.tg-inventory-info{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.tg-inventory-info>b{font-size:14px}
+.tg-inventory-info>small{font-size:11px;color:var(--tg-muted,#89919b)}
+.tg-upgrade-open{margin-top:4px;border:0;border-radius:10px;padding:8px 11px;background:#3390ec;color:white;font-weight:650;font-size:12px}
+@media(max-width:380px){.tg-inventory-card>.tg-real-composite{width:86px;height:86px;flex-basis:86px}.tg-market-catalog{gap:8px!important;padding-left:10px;padding-right:10px}}
+
 .tg-real-sheen{position:absolute;inset:0;z-index:4;background:linear-gradient(125deg,transparent 28%,#ffffff20 43%,transparent 58%);pointer-events:none}
 .tg-upgrade-stage .tg-real-composite{width:158px;height:158px;border-radius:30px}
 .tg-inventory-card .tg-real-composite,.profile-gift-card .tg-real-composite{overflow:hidden}
@@ -933,7 +971,7 @@ function tgGiftCardArt(gift,attrs={}){
   const modelFilter=modelFilters[model]||modelFilters['Золотая'];
   const safeUrl=url.replace(/'/g,'%27');
   return '<div class="tg-gift-art tg-collectible-art tg-real-composite" data-model="'+esc(model)+'" data-pattern="'+esc(pattern)+'" data-background="'+esc(background)+'" aria-label="'+esc(model+', '+pattern+', '+background)+'" style="--tg-bg-a:'+bg[0]+';--tg-bg-b:'+bg[1]+';--tg-bg-c:'+bg[2]+';--tg-model-filter:'+modelFilter+';--tg-pattern-image:'+patternLayer+';--tg-gift-mask:url(\''+safeUrl+'\')">'+
-    '<div class="tg-real-glow"></div><img class="tg-real-model" loading="lazy" alt="'+esc(gift.gift_name||'Коллекционный подарок')+'" src="'+url+'" data-asset="'+esc(asset)+'" data-slug="'+esc(slug)+'">'+
+    '<div class="tg-real-glow"></div><img class="tg-real-model" crossorigin="anonymous" loading="eager" alt="'+esc(gift.gift_name||'Коллекционный подарок')+'" src="'+url+'" data-asset="'+esc(asset)+'" data-slug="'+esc(slug)+'">'+
     '<div class="tg-real-pattern" aria-hidden="true"></div><div class="tg-real-sheen"></div></div>';
 }
 function tgRandomGiftValue(key,current){
