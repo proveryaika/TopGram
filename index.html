@@ -1730,6 +1730,43 @@ function openGiftEditor(selectedGiftId=null){
   const gifts=topgramGiftRows.filter(g=>g.gift_type!=='collectible');
   if(!gifts.length)return toast('Сначала импортируй обычные подарки через набор ZIP.');
   const options=gifts.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.gift_name)+'</option>').join('');
+  let attributeDraft={model:[],pattern:[],background:[]},attributeCounter=0;
+  const attributeLabels={model:'Модели',pattern:'Узоры',background:'Фоны'};
+  const renderAttributeRows=kind=>{
+    const rows=attributeDraft[kind]||[];
+    const cards=rows.map((item,index)=>'<div class="tg-admin-attribute-row" data-attribute-row="'+kind+'" data-index="'+index+'"><div class="tg-admin-attribute-top"><b>'+esc(attributeLabels[kind])+' #'+(index+1)+'</b><button type="button" data-remove-attribute="'+kind+'" data-index="'+index+'" '+(rows.length<=2?'disabled':'')+'>Удалить</button></div><label>Название<input data-attribute-field="name" data-kind="'+kind+'" data-index="'+index+'" maxlength="80" value="'+esc(item.name||'')+'"></label><label>Вес редкости (%)<input data-attribute-field="rarity_percent" data-kind="'+kind+'" data-index="'+index+'" type="number" min="0.01" max="100" step="0.01" value="'+Number(item.rarity_percent||1)+'"></label>'+(kind==='background'?'<div class="tg-admin-color-grid">'+['center','edge','pattern','text'].map(key=>'<label>'+({center:'Центр',edge:'Край',pattern:'Узор',text:'Текст'}[key])+'<input type="color" data-attribute-field="'+key+'" data-kind="'+kind+'" data-index="'+index+'" value="'+(/^#[0-9a-f]{6}$/i.test(item[key]||'')?item[key]:'#'+({center:'6f5bea',edge:'34278f',pattern:'a89df5',text:'ffffff'}[key]))+'"></label>').join('')+'</div>':'<label>Файл TGS / Lottie<input type="file" accept=".tgs,.json,application/json,application/x-tgsticker" data-attribute-file="'+kind+'" data-index="'+index+'"></label><small class="tg-admin-attribute-file">'+(item.animation_path?'Файл загружен: '+esc(item.animation_path):'Файл ещё не загружен')+'</small>')+'</div>').join('');
+    return '<section class="tg-admin-attribute-group"><div class="tg-admin-attribute-heading"><b>'+esc(attributeLabels[kind])+'</b><button type="button" data-add-attribute="'+kind+'">＋ Добавить</button></div><div class="tg-admin-attribute-rows">'+cards+'</div></section>';
+  };
+  const renderAllAttributeRows=()=>{
+    const root=$('tgAdminAttributeEditor');if(!root)return;
+    root.innerHTML=['model','pattern','background'].map(renderAttributeRows).join('');
+    root.querySelectorAll('[data-add-attribute]').forEach(btn=>btn.onclick=()=>{attributeDraft[btn.dataset.addAttribute].push({name:'',rarity_percent:1});renderAllAttributeRows()});
+    root.querySelectorAll('[data-remove-attribute]').forEach(btn=>btn.onclick=()=>{const list=attributeDraft[btn.dataset.removeAttribute];if(list.length<=2)return;list.splice(Number(btn.dataset.index),1);renderAllAttributeRows()});
+    root.querySelectorAll('[data-attribute-field]').forEach(input=>input.onchange=()=>{const item=attributeDraft[input.dataset.kind][Number(input.dataset.index)];item[input.dataset.attributeField]=input.dataset.attributeField==='rarity_percent'?Number(input.value):input.value});
+    root.querySelectorAll('[data-attribute-file]').forEach(input=>input.onchange=async()=>{
+      const file=input.files?.[0];if(!file)return;
+      const kind=input.dataset.attributeFile,index=Number(input.dataset.index),item=attributeDraft[kind][index];
+      if(file.size>512*1024&&file.name.toLowerCase().endsWith('.tgs'))return toast('TGS-файл не должен превышать 512 КБ.');
+      if(file.size>8*1024*1024)return toast('Файл слишком большой (максимум 8 МБ).');
+      input.disabled=true;
+      try{
+        let bytes=await file.arrayBuffer();
+        if(file.name.toLowerCase().endsWith('.tgs')){
+          if(!('DecompressionStream' in window))throw new Error('Браузер не поддерживает TGS.');
+          bytes=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+        }
+        const animation=JSON.parse(new TextDecoder().decode(bytes));
+        if(!animation||!Array.isArray(animation.layers)||!Number(animation.fr)||Number(animation.fr)<=0)throw new Error('Некорректная Lottie/TGS-анимация.');
+        const session=tgAuthSavedSession(),ext=file.name.toLowerCase().endsWith('.tgs')?'tgs':'json';
+        const path='collectible-attributes/'+$('tgUpgradeGift').value+'/'+kind+'/'+crypto.randomUUID()+'.'+ext;
+        const upload=await fetch(TG_SUPABASE_URL+'/storage/v1/object/topgram-gift-assets/'+path.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:{'apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/octet-stream','x-upsert':'false'},body:file});
+        const result=await upload.json().catch(()=>({}));if(!upload.ok)throw new Error(result.message||result.error||'Не удалось загрузить файл.');
+        item.animation_path=path;
+        toast('Анимация загружена.');
+        renderAllAttributeRows();
+      }catch(error){toast(error.message);input.disabled=false}
+    });
+  };
   const current=gifts.map(g=>'<div class="tg-admin-existing"><span>🎁 <b>'+esc(g.gift_name)+'</b><small>'+(g.is_active?'В каталоге':'Скрыт')+' · '+Number(g.issued_count||0)+' / '+Number(g.total_supply||0)+' продано</small></span><small>'+(g.upgrade_enabled?'NFT включён':'NFT выключен')+' · '+Number(g.upgrade_issued_count||0)+' / '+Number(g.upgrade_total_supply||0)+'</small></div>').join('');
   modal('TopGram · каталог подарков',
     '<div class="tg-admin-wrap"><div class="tg-admin-tools"><button type="button" id="tgAdminGrantStars">⭐ Выдать звёзды</button><button type="button" id="tgAdminCollectible">✦ Выдать коллекционный юзернейм</button><button type="button" id="tgAdminStats">📊 Статистика</button><button type="button" id="tgAdminPacks">📦 Наборы подарков</button></div>'+
@@ -1744,7 +1781,7 @@ function openGiftEditor(selectedGiftId=null){
     '<label for="tgUpgradePrice">Цена улучшения в Stars</label><input id="tgUpgradePrice" type="number" min="1" max="1000000000" value="25" inputmode="numeric">'+
     '<label for="tgUpgradeSupply">Тираж NFT-версии</label><input id="tgUpgradeSupply" type="number" min="1" max="1000000" value="100" inputmode="numeric">'+
     '<label class="tg-upgrade-enabled-label"><input id="tgUpgradeEnabled" type="checkbox"> Разрешить улучшение этого подарка</label>'+
-    '<div id="tgUpgradeAttributeSummary" class="tg-admin-hint">Загружаем параметры NFT…</div><div class="tg-admin-section-title">История выпусков NFT</div><div id="tgGiftVersionHistory" class="tg-admin-version-history">Загружаем версии…</div><label for="tgAttrModel">Модели · JSON с rarity_percent</label><textarea id="tgAttrModel" rows="4" spellcheck="false"></textarea><label for="tgAttrPattern">Узоры · JSON с rarity_percent</label><textarea id="tgAttrPattern" rows="4" spellcheck="false"></textarea><label for="tgAttrBackground">Фоны · JSON с rarity_percent</label><textarea id="tgAttrBackground" rows="4" spellcheck="false"></textarea><p class="tg-admin-hint">Пример элемента: {"name":"Gold","rarity_percent":5}. Чем меньше вес, тем реже атрибут. Для каждой категории нужно минимум два варианта.</p>'+
+    '<div id="tgUpgradeAttributeSummary" class="tg-admin-hint">Загружаем параметры NFT…</div><div class="tg-admin-section-title">Коллекционные атрибуты</div><p class="tg-admin-hint">Добавляй модели и узоры с анимациями TGS/Lottie, а для фонов настраивай цветовые палитры и веса редкости. Для каждой группы нужно минимум два варианта.</p><div id="tgAdminAttributeEditor" class="tg-admin-attribute-editor"></div><div class="tg-admin-section-title">История выпусков NFT</div><div id="tgGiftVersionHistory" class="tg-admin-version-history">Загружаем версии…</div>'+
     '<div class="tg-admin-section-title">Состояние каталога</div>'+current+'</div>',
     async()=>{
       const gift=gifts.find(x=>x.id===$('tgUpgradeGift').value);if(!gift)return toast('Выбери подарок.');
@@ -1755,7 +1792,7 @@ function openGiftEditor(selectedGiftId=null){
       if(!Number.isSafeInteger(price)||price<1)return toast('Укажи стоимость NFT-улучшения от 1 звезды.');
       if(!Number.isSafeInteger(supply)||supply<1)return toast('Укажи тираж NFT от 1 экземпляра.');
       let attributes={};
-      try{for(const [key,id] of [['model','tgAttrModel'],['pattern','tgAttrPattern'],['background','tgAttrBackground']]){const parsed=JSON.parse($(id).value||'[]');if(!Array.isArray(parsed))throw new Error('Каждый атрибут должен быть JSON-массивом.');attributes[key]=parsed.map(x=>({name:String(x?.name||'').trim(),rarity_percent:Number(x?.rarity_percent??1),...(x?.animation_path?{animation_path:String(x.animation_path)}:{})}));if($('tgUpgradeEnabled').checked&&(attributes[key].length<2||attributes[key].some(x=>!x.name||!Number.isFinite(x.rarity_percent)||x.rarity_percent<=0)))throw new Error('В каждой категории нужны минимум два варианта с именем и положительным rarity_percent.');}}catch(error){return toast('Проверь JSON атрибутов: '+error.message)}
+      try{for(const key of ['model','pattern','background']){attributes[key]=attributeDraft[key].map(x=>({...x,name:String(x.name||'').trim(),rarity_percent:Number(x.rarity_percent||0)}));if($('tgUpgradeEnabled').checked&&(attributes[key].length<2||attributes[key].some(x=>!x.name||!Number.isFinite(x.rarity_percent)||x.rarity_percent<=0)))throw new Error('В каждой группе нужны минимум два варианта с названием и положительным весом редкости.');if(key!=='background'&&$('tgUpgradeEnabled').checked&&attributes[key].some(x=>!x.animation_path))throw new Error('Каждой модели и каждому узору нужен файл TGS или Lottie.');}}catch(error){return toast('Проверь атрибуты: '+error.message)}
       gift._upgradeAttributes=attributes;
       $('confirmModal').disabled=true;
       try{
@@ -1785,7 +1822,12 @@ function openGiftEditor(selectedGiftId=null){
         const saved=Array.isArray(configured[key])&&configured[key].length?configured[key]:loaded[key];
         gift._upgradeAttributes[key]=saved.map(v=>typeof v==='string'?{name:v,rarity_percent:1}:{name:v.name,rarity_percent:Number(v.rarity_percent)||1,...(v.animation_path?{animation_path:v.animation_path}:{}),...(v.center?{center:v.center}:{}),...(v.edge?{edge:v.edge}:{}),...(v.pattern?{pattern:v.pattern}:{}),...(v.text?{text:v.text}:{})});
       }
-      $('tgAttrModel').value=JSON.stringify(gift._upgradeAttributes.model,null,2);$('tgAttrPattern').value=JSON.stringify(gift._upgradeAttributes.pattern,null,2);$('tgAttrBackground').value=JSON.stringify(gift._upgradeAttributes.background,null,2);$('tgUpgradeAttributeSummary').textContent='Моделей: '+gift._upgradeAttributes.model.length+' · узоров: '+gift._upgradeAttributes.pattern.length+' · фонов: '+gift._upgradeAttributes.background.length+'. Меняй rarity_percent для настройки вероятности выпадения.';
+      attributeDraft={model:gift._upgradeAttributes.model,pattern:gift._upgradeAttributes.pattern,background:gift._upgradeAttributes.background.map(x=>({...x,center:x.center||'#6f5bea',edge:x.edge||'#34278f',pattern:x.pattern||'#a89df5',text:x.text||'#ffffff'}))};
+      if(attributeDraft.model.length<2)attributeDraft.model=[{name:'',rarity_percent:1},{name:'',rarity_percent:1}];
+      if(attributeDraft.pattern.length<2)attributeDraft.pattern=[{name:'',rarity_percent:1},{name:'',rarity_percent:1}];
+      if(attributeDraft.background.length<2)attributeDraft.background=[{name:'',rarity_percent:1,center:'#6f5bea',edge:'#34278f',pattern:'#a89df5',text:'#ffffff'},{name:'',rarity_percent:1,center:'#32a86b',edge:'#17613e',pattern:'#8ee0b3',text:'#ffffff'}];
+      renderAllAttributeRows();
+      $('tgUpgradeAttributeSummary').textContent='Модели: '+attributeDraft.model.length+' · узоры: '+attributeDraft.pattern.length+' · фоны: '+attributeDraft.background.length+'. Вес в процентах используется для вероятности выпадения.';
     }catch(e){$('tgUpgradeAttributeSummary').textContent='Не удалось загрузить параметры: '+e.message;gift._upgradeAttributes=null}
     const history=$('tgGiftVersionHistory');if(history){history.textContent='Загружаем версии…';try{const data=await tgGiftApi('list_collectible_versions',{gift_id:gift.id});history.innerHTML=(data.versions||[]).map(v=>'<div class="tg-admin-version-row"><b>v'+Number(v.version_no)+'</b><span>'+Number(v.upgrade_price_stars).toLocaleString('ru-RU')+' ⭐</span><span>'+Number(v.issued_count||0)+' / '+Number(v.upgrade_total_supply||0)+'</span><small>'+((v.published_at&&new Date(v.published_at).toLocaleString('ru-RU'))||'—')+'</small><button type="button" data-version-details="'+esc(v.id)+'">Атрибуты</button></div>').join('')||'<p class="tg-admin-hint">Опубликованных версий пока нет.</p>';history.querySelectorAll('[data-version-details]').forEach(btn=>btn.onclick=()=>{const version=(data.versions||[]).find(v=>v.id===btn.dataset.versionDetails);if(version)modal('TopGram · NFT v'+version.version_no,'<pre class="tg-admin-json">'+esc(JSON.stringify(version.attributes,null,2))+'</pre>',close,'Закрыть')})}catch(error){history.textContent='Не удалось загрузить версии: '+error.message}}
   };
