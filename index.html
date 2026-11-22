@@ -1000,7 +1000,7 @@ async function tgOpenGiftPackPreview(pack){
     const response=await fetch(url);if(!response.ok)throw new Error('Не удалось загрузить ZIP набора.');
     const blob=await response.blob();
     const result=await tgInspectGiftPack(new File([blob],(pack.pack_key||'gift-pack')+'.zip',{type:'application/zip'}));
-    modal('TopGram · '+esc(pack.pack_name),
+    modal('TopGram · '+String(pack.pack_name||'Набор'),
       '<div class="tg-admin-form"><p class="tg-admin-hint">Проверь анимации обычных подарков и NFT-вариантов. Можно импортировать весь набор или отдельные подарки.</p>'+
       '<div id="tgPackPreviewList" class="tg-pack-preview-list"></div><div id="tgPackPreviewCanvas" class="tg-pack-preview-canvas" style="width:100%;height:220px;max-width:320px;margin:12px auto"></div>'+
       '<div id="tgPackIndividualImports" class="tg-admin-shelf"></div></div>',()=>close(),'Закрыть');
