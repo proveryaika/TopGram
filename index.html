@@ -1165,7 +1165,7 @@ function openGiftAdmin(){
     '<label for="tgUpgradePrice">Цена улучшения в Stars</label><input id="tgUpgradePrice" type="number" min="1" max="1000000000" value="25" inputmode="numeric">'+
     '<label for="tgUpgradeSupply">Тираж NFT-версии</label><input id="tgUpgradeSupply" type="number" min="1" max="1000000" value="100" inputmode="numeric">'+
     '<label class="tg-upgrade-enabled-label"><input id="tgUpgradeEnabled" type="checkbox"> Разрешить улучшение этого подарка</label>'+
-    '<div id="tgUpgradeAttributeSummary" class="tg-admin-hint">Загружаем модели, узоры и фоны…</div>'+
+    '<div id="tgUpgradeAttributeSummary" class="tg-admin-hint">Загружаем параметры NFT…</div><label for="tgAttrModel">Модели · JSON с rarity_percent</label><textarea id="tgAttrModel" rows="4" spellcheck="false"></textarea><label for="tgAttrPattern">Узоры · JSON с rarity_percent</label><textarea id="tgAttrPattern" rows="4" spellcheck="false"></textarea><label for="tgAttrBackground">Фоны · JSON с rarity_percent</label><textarea id="tgAttrBackground" rows="4" spellcheck="false"></textarea><p class="tg-admin-hint">Пример элемента: {"name":"Gold","rarity_percent":5}. Чем меньше вес, тем реже атрибут. Для каждой категории нужно минимум два варианта.</p>'+
     '<div class="tg-admin-section-title">Состояние каталога</div>'+current+'</div>',
     async()=>{
       const gift=gifts.find(x=>x.id===$('tgUpgradeGift').value);if(!gift)return toast('Выбери подарок.');
@@ -1175,8 +1175,9 @@ function openGiftAdmin(){
       if(!Number.isSafeInteger(baseSupply)||baseSupply<Number(gift.issued_count||0))return toast('Тираж не может быть меньше уже проданных подарков.');
       if(!Number.isSafeInteger(price)||price<1)return toast('Укажи стоимость NFT-улучшения от 1 звезды.');
       if(!Number.isSafeInteger(supply)||supply<1)return toast('Укажи тираж NFT от 1 экземпляра.');
-      const attributes=gift._upgradeAttributes;
-      if($('tgUpgradeEnabled').checked&&(!attributes||!['model','pattern','background'].every(k=>Array.isArray(attributes[k])&&attributes[k].length>=2)))return toast('Для NFT нужны минимум два варианта модели, узора и фона.');
+      let attributes={};
+      try{for(const [key,id] of [['model','tgAttrModel'],['pattern','tgAttrPattern'],['background','tgAttrBackground']]){const parsed=JSON.parse($(id).value||'[]');if(!Array.isArray(parsed))throw new Error('Каждый атрибут должен быть JSON-массивом.');attributes[key]=parsed.map(x=>({name:String(x?.name||'').trim(),rarity_percent:Number(x?.rarity_percent??1),...(x?.animation_path?{animation_path:String(x.animation_path)}:{})}));if($('tgUpgradeEnabled').checked&&(attributes[key].length<2||attributes[key].some(x=>!x.name||!Number.isFinite(x.rarity_percent)||x.rarity_percent<=0)))throw new Error('В каждой категории нужны минимум два варианта с именем и положительным rarity_percent.');}}catch(error){return toast('Проверь JSON атрибутов: '+error.message)}
+      gift._upgradeAttributes=attributes;
       $('confirmModal').disabled=true;
       try{
         await tgGiftRpc('topgram_admin_update_gift_catalog',{p_admin_id:tgCurrentUserId(),p_gift_id:gift.id,p_gift_name:$('tgGiftName').value.trim(),p_price_stars:basePrice,p_total_supply:baseSupply,p_is_active:$('tgGiftActive').checked});
@@ -1204,7 +1205,7 @@ function openGiftAdmin(){
         const saved=Array.isArray(configured[key])&&configured[key].length?configured[key]:loaded[key];
         gift._upgradeAttributes[key]=saved.map(v=>typeof v==='string'?{name:v,rarity_percent:1}:{name:v.name,rarity_percent:Number(v.rarity_percent)||1,...(v.animation_path?{animation_path:v.animation_path}:{})});
       }
-      $('tgUpgradeAttributeSummary').textContent='Моделей: '+gift._upgradeAttributes.model.length+' · узоров: '+gift._upgradeAttributes.pattern.length+' · фонов: '+gift._upgradeAttributes.background.length+'. Редкость учитывается при случайном улучшении.';
+      $('tgAttrModel').value=JSON.stringify(gift._upgradeAttributes.model,null,2);$('tgAttrPattern').value=JSON.stringify(gift._upgradeAttributes.pattern,null,2);$('tgAttrBackground').value=JSON.stringify(gift._upgradeAttributes.background,null,2);$('tgUpgradeAttributeSummary').textContent='Моделей: '+gift._upgradeAttributes.model.length+' · узоров: '+gift._upgradeAttributes.pattern.length+' · фонов: '+gift._upgradeAttributes.background.length+'. Меняй rarity_percent для настройки вероятности выпадения.';
     }catch(e){$('tgUpgradeAttributeSummary').textContent='Не удалось загрузить параметры: '+e.message;gift._upgradeAttributes=null}
   };
   $('tgUpgradeGift').onchange=fill;fill();
