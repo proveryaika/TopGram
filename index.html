@@ -1100,7 +1100,28 @@ function wireTopgramGiftImages(root){
     let step=0;
     img.onerror=()=>{step++;if(step<sources.length)img.src=sources[step];else img.remove()};
   });
+  root.querySelectorAll('.tg-tgs-animation:not([data-loaded])').forEach(async container=>{
+    const path=container.dataset.animationPath;if(!path)return;
+    container.dataset.loaded='1';
+    try{
+      const cache=window.__tgAnimationDataCache||(window.__tgAnimationDataCache=new Map());
+      let animationData=cache.get(path);
+      if(!animationData){
+        const url=TG_SUPABASE_URL+'/storage/v1/object/public/topgram-gift-assets/'+path.split('/').map(encodeURIComponent).join('/');
+        const response=await fetch(url);if(!response.ok)throw new Error('Не удалось загрузить анимацию');
+        let bytes=await response.arrayBuffer();
+        if(path.toLowerCase().endsWith('.tgs')){
+          if(!('DecompressionStream' in window))throw new Error('TGS gzip не поддерживается браузером');
+          bytes=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+        }
+        animationData=JSON.parse(new TextDecoder().decode(bytes));cache.set(path,animationData);
+      }
+      const lottie=await tgEnsureLottieLibrary();
+      container.__tgLottiePlayer=lottie.loadAnimation({container,renderer:'svg',loop:true,autoplay:true,animationData});
+    }catch(error){container.textContent='🎁';container.title=error.message}
+  });
 }
+
 function openGiftAdmin(){
   if(!topgramGiftAdmin)return toast('Админ-панель доступна только владельцу TopGram.');
   const gifts=topgramGiftRows.filter(g=>g.gift_type!=='collectible');
@@ -1284,21 +1305,28 @@ function tgGiftCardArt(gift,attrs={}){
   const baseUrl=TG_GIFT_ASSET_CDN+'webp/by_name/'+encodeURIComponent(asset)+'.webp';
   const isCollectible=gift.gift_type==='collectible'||!!(attrs.model&&attrs.pattern&&attrs.background);
   if(!isCollectible){
+    if(gift.base_animation_path)return '<div class="tg-gift-art tg-plain-gift-art"><div class="tg-tgs-animation" data-animation-path="'+esc(gift.base_animation_path)+'" style="position:absolute;inset:0;width:100%;height:100%"></div></div>';
     return '<div class="tg-gift-art tg-plain-gift-art"><img loading="lazy" alt="'+esc(gift.gift_name||'Подарок TopGram')+'" src="'+baseUrl+'" data-asset="'+esc(asset)+'" data-slug="'+esc(slug)+'"></div>';
   }
-  const model=attrs.model||'';
-  const symbol=attrs.pattern||'';
-  const backdrop=attrs.background||'';
+  const model=attrs.model||'',symbol=attrs.pattern||'',backdrop=attrs.background||'';
   const palette=tgGiftBackdropPalette(backdrop);
-  const validModel=/^[\\p{L}\\p{N}_-]{1,80}$/u.test(model);
+  const pools=gift.upgrade_attributes||{};
+  const modelMeta=(pools.model||[]).find(x=>x&&x.name===model);
+  const patternMeta=(pools.pattern||[]).find(x=>x&&x.name===symbol);
+  const validModel=/^[\p{L}\p{N}_-]{1,80}$/u.test(model);
   const modelUrl=validModel?TG_GIFT_ASSET_CDN+'models/'+encodeURIComponent(asset)+'/'+encodeURIComponent(model)+'.webp':baseUrl;
+  const modelVisual=modelMeta?.animation_path
+    ?'<div class="tg-tgs-animation tg-real-model-animation" data-animation-path="'+esc(modelMeta.animation_path)+'" style="position:absolute;inset:12%;width:76%;height:76%;z-index:2"></div>'
+    :'<img class="tg-real-model" loading="lazy" alt="'+esc(gift.gift_name||'Коллекционный подарок')+'" src="'+modelUrl+'" data-model-src="'+(validModel?esc(modelUrl):'')+'" data-asset="'+esc(asset)+'" data-slug="'+esc(slug)+'" data-fallback="'+esc(baseUrl)+'">';
   const glyph=tgGiftSymbolGlyph(symbol);
   const tiles=Array.from({length:9},()=>'<span>'+esc(glyph)+'</span>').join('');
+  const patternVisual=patternMeta?.animation_path
+    ?'<div class="tg-tgs-animation tg-real-pattern-animation" data-animation-path="'+esc(patternMeta.animation_path)+'" style="position:absolute;inset:8%;width:84%;height:84%;z-index:3;opacity:.72;mix-blend-mode:screen;pointer-events:none"></div>'
+    :'<div class="tg-real-symbol-field" aria-hidden="true">'+tiles+'</div>';
   return '<div class="tg-gift-art tg-collectible-art tg-real-composite" data-model="'+esc(model)+'" data-pattern="'+esc(symbol)+'" data-background="'+esc(backdrop)+'" aria-label="'+esc([tgGiftPrettyAttribute(model),tgGiftPrettyAttribute(symbol),tgGiftPrettyAttribute(backdrop)].filter(Boolean).join(', '))+'" style="--tg-bg-a:'+palette[0]+';--tg-bg-b:'+palette[1]+';--tg-bg-c:'+palette[2]+'">'+
-    '<div class="tg-real-glow"></div><div class="tg-real-symbol-field" aria-hidden="true">'+tiles+'</div>'+
-    '<img class="tg-real-model" loading="lazy" alt="'+esc(gift.gift_name||'Коллекционный подарок')+'" src="'+modelUrl+'" data-model-src="'+(validModel?esc(modelUrl):'')+'" data-asset="'+esc(asset)+'" data-slug="'+esc(slug)+'" data-fallback="'+esc(baseUrl)+'">'+
-    '<div class="tg-real-sheen"></div></div>';
+    '<div class="tg-real-glow"></div>'+patternVisual+modelVisual+'<div class="tg-real-sheen"></div></div>';
 }
+
 function tgRandomGiftValue(key,current){
   const values=tgGiftUpgradeOptions[key].values.filter(v=>v!==current);
   const pool=values.length?values:tgGiftUpgradeOptions[key].values;
