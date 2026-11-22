@@ -1516,7 +1516,7 @@ async function openGiftInventory(){
       (item.gift_message?'<small>«'+esc(item.gift_message)+'»</small>':'')+
       (item.upgrade_prepaid?'<small>✦ Улучшение уже оплачено</small>':'')+
       (canUpgrade?'<button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'">✦ Улучшить'+(item.upgrade_prepaid?' бесплатно':' · '+Number(g.upgrade_price_stars).toLocaleString('ru-RU')+' ⭐')+'</button>':'')+
-      (nft?(item.active_listing?'<small>✦ На NFT-рынке · '+Number(item.active_listing.price_stars).toLocaleString('ru-RU')+' ⭐</small><button type="button" class="tg-listing-cancel" data-listing-id="'+esc(item.active_listing.id)+'">Снять с продажи</button>':'<button type="button" class="tg-listing-open" data-inventory-id="'+esc(item.id)+'">Выставить на NFT-рынок</button><button type="button" class="tg-transfer-open" data-inventory-id="'+esc(item.id)+'">↗ Передать</button>'):(Number(g.gift_manifest?.convert_stars||0)>0?'<button type="button" class="tg-convert-open" data-inventory-id="'+esc(item.id)+'" data-stars="'+Number(g.gift_manifest.convert_stars)+'">↻ Конвертировать · '+Number(g.gift_manifest.convert_stars).toLocaleString('ru-RU')+' ⭐</button>':''))+
+      (nft?(item.active_listing?'<small>✦ На NFT-рынке · '+Number(item.active_listing.price_stars).toLocaleString('ru-RU')+' ⭐</small><button type="button" class="tg-listing-cancel" data-listing-id="'+esc(item.active_listing.id)+'">Снять с продажи</button>':'<button type="button" class="tg-listing-open" data-inventory-id="'+esc(item.id)+'">Выставить на NFT-рынок</button><button type="button" class="tg-auction-open" data-inventory-id="'+esc(item.id)+'">⌛ Создать аукцион</button><button type="button" class="tg-transfer-open" data-inventory-id="'+esc(item.id)+'">↗ Передать</button>'):(Number(g.gift_manifest?.convert_stars||0)>0?'<button type="button" class="tg-convert-open" data-inventory-id="'+esc(item.id)+'" data-stars="'+Number(g.gift_manifest.convert_stars)+'">↻ Конвертировать · '+Number(g.gift_manifest.convert_stars).toLocaleString('ru-RU')+' ⭐</button>':''))+
       '<button type="button" class="tg-save-open" data-inventory-id="'+esc(item.id)+'" data-saved="'+(item.is_saved?'1':'0')+'">'+(item.is_saved?'Скрыть из профиля':'Показать в профиле')+'</button></div></div>';
   }).join('');
   modal('Мои подарки','<div class="gift-picker-head"><div><strong>Мои подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong></div>')+'</div>',close,'Готово');
@@ -1524,6 +1524,14 @@ async function openGiftInventory(){
   $('modalBody').querySelectorAll('.tg-transfer-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftTransfer(item)});
   $('modalBody').querySelectorAll('.tg-convert-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(!item)return;modal('Конвертировать подарок в Stars','<p>Подарок «'+esc(item.gift?.gift_name||'TopGram')+'» будет удалён из инвентаря, а на баланс вернётся <b>'+Number(b.dataset.stars).toLocaleString('ru-RU')+' ⭐</b>.</p><p class="tg-admin-hint">Операцию нельзя отменить. NFT конвертировать нельзя.</p>',async()=>{b.disabled=true;try{const result=await tgGiftApi('convert_gift',{inventory_id:item.id});await tgGiftRefreshWallet();close();toast('Возвращено '+Number(result.conversion.stars_returned).toLocaleString('ru-RU')+' ⭐');openGiftInventory()}catch(error){toast(error.message);b.disabled=false}},'Конвертировать')});
   $('modalBody').querySelectorAll('.tg-listing-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftListing(item)});
+  $('modalBody').querySelectorAll('.tg-auction-open').forEach(b=>b.onclick=()=>{
+    const item=items.find(x=>x.id===b.dataset.inventoryId);if(!item)return;
+    modal('Создать NFT-аукцион','<div class="tg-admin-form"><label for="tgAuctionStart">Стартовая цена в Stars</label><input id="tgAuctionStart" type="number" min="1" value="100"><label for="tgAuctionHours">Длительность</label><select id="tgAuctionHours"><option value="1">1 час</option><option value="6">6 часов</option><option value="24" selected>24 часа</option><option value="72">3 дня</option><option value="168">7 дней</option></select><p class="tg-admin-hint">NFT будет заблокирован до завершения аукциона. Ставки списываются с баланса, перебитые ставки возвращаются.</p></div>',async()=>{
+      const price=Number($('tgAuctionStart').value),hours=Number($('tgAuctionHours').value);
+      if(!Number.isSafeInteger(price)||price<1||price>1000000000)return toast('Проверь стартовую цену.');
+      try{await tgGiftApi('create_auction',{inventory_id:item.id,starting_price_stars:price,duration_hours:hours});close();toast('Аукцион создан.');openGiftInventory()}catch(e){toast(e.message)}
+    },'Создать аукцион');
+  });
   $('modalBody').querySelectorAll('.tg-listing-cancel').forEach(b=>b.onclick=async()=>{try{await tgGiftApi('cancel_listing',{listing_id:b.dataset.listingId});toast('NFT снят с продажи.');openGiftInventory()}catch(e){toast(e.message)}});
   $('modalBody').querySelectorAll('.tg-upgrade-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftUpgrade(item)});
   $('modalBody').querySelectorAll('.tg-save-open').forEach(b=>b.onclick=async()=>{
@@ -1533,26 +1541,75 @@ async function openGiftInventory(){
   wireTopgramGiftImages($('modalBody'));
 }
 async function openGiftMarketplace(){
-  let data;try{await tgGiftRefreshWallet();data=await tgGiftApi('list_marketplace')}catch(error){return toast(error.message)}
-  const listings=data.listings||[];
-  const rows=listings.map(listing=>{
+  let listings=[],auctions=[];
+  try{
+    await tgGiftRefreshWallet();
+    const [fixed,auctionData]=await Promise.all([tgGiftApi('list_marketplace'),tgGiftApi('list_auctions')]);
+    listings=fixed.listings||[];auctions=auctionData.auctions||[];
+  }catch(error){return toast(error.message)}
+  const fixedRows=listings.map(listing=>{
     const item=listing.inventory||{},gift=item.gift||{},attrs=item.attributes||{};
     return '<div class="tg-inventory-card">'+tgGiftCardArt(gift,attrs)+'<div class="tg-inventory-info"><b>'+esc(gift.gift_name||'Коллекционный подарок')+' <span class="tg-nft-label">NFT</span></b>'+
-      '<small>№ '+Number(item.serial_number||0)+'</small><small>Модель: '+esc(attrs.model||'—')+'</small><small>Узор: '+esc(attrs.pattern||'—')+'</small><small>Фон: '+esc(attrs.background||'—')+'</small>'+
+      '<small>№ '+Number(item.serial_number||0)+'</small><small>'+esc(attrs.model||'—')+' · '+esc(attrs.pattern||'—')+' · '+esc(attrs.background||'—')+'</small>'+
       '<small>Продавец: @'+esc(listing.seller_username||'TopGram')+'</small><b>'+Number(listing.price_stars).toLocaleString('ru-RU')+' ⭐</b>'+
       '<button type="button" class="tg-market-buy-listing" data-listing-id="'+esc(listing.id)+'">Купить NFT</button></div></div>';
   }).join('');
-  modal('TopGram · NFT рынок','<div class="gift-picker-head"><div><strong>Коллекционные подарки</strong><small>Покупай NFT у других пользователей за Stars</small></div></div><div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">✦</div><strong>Активных объявлений пока нет</strong></div>')+'</div>',close,'Готово');
+  const auctionRows=auctions.map(a=>{
+    const item=a.inventory||{},gift=item.gift||{},attrs=item.attributes||{};
+    return '<div class="tg-inventory-card">'+tgGiftCardArt(gift,attrs)+'<div class="tg-inventory-info"><b>'+esc(gift.gift_name||'Коллекционный подарок')+' <span class="tg-nft-label">АУКЦИОН</span></b>'+
+      '<small>№ '+Number(item.serial_number||0)+' · @'+esc(a.seller_username||'TopGram')+'</small><small>До: '+new Date(a.ends_at).toLocaleString('ru-RU')+'</small>'+
+      '<b>Текущая ставка: '+Number(a.current_price_stars).toLocaleString('ru-RU')+' ⭐</b>'+
+      '<button type="button" class="tg-auction-bid" data-auction-id="'+esc(a.id)+'" data-price="'+Number(a.current_price_stars)+'">Сделать ставку</button></div></div>';
+  }).join('');
+  modal('TopGram · рынок подарков',
+    '<div class="gift-picker-head"><div><strong>Коллекционные подарки</strong><small>Покупка NFT и участие в аукционах за Stars</small></div></div>'+
+    '<div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div>'+
+    '<div class="tg-admin-dashboard-actions" style="grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0">'+
+      '<button type="button" id="tgMarketFixedTab"><span>✦</span><b>Продажа</b><small>'+listings.length+' NFT</small></button>'+
+      '<button type="button" id="tgMarketAuctionTab"><span>⌛</span><b>Аукционы</b><small>'+auctions.length+' NFT</small></button>'+
+      '<button type="button" id="tgMarketCraftTab"><span>⚒</span><b>Крафт</b><small>Создание подарков</small></button></div>'+
+    '<div id="tgMarketFixedRows" class="tg-inventory-list">'+(fixedRows||'<div class="gift-empty"><strong>Объявлений пока нет</strong></div>')+'</div>'+
+    '<div id="tgMarketAuctionRows" class="tg-inventory-list" style="display:none">'+(auctionRows||'<div class="gift-empty"><strong>Активных аукционов пока нет</strong></div>')+'</div>',close,'Готово');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
+  $('tgMarketFixedTab').onclick=()=>{$('tgMarketFixedRows').style.display='';$('tgMarketAuctionRows').style.display='none'};
+  $('tgMarketAuctionTab').onclick=()=>{$('tgMarketFixedRows').style.display='none';$('tgMarketAuctionRows').style.display=''};
+  $('tgMarketCraftTab').onclick=()=>openGiftCrafting();
   $('modalBody').querySelectorAll('.tg-market-buy-listing').forEach(btn=>btn.onclick=()=>{
     const listing=listings.find(x=>x.id===btn.dataset.listingId);if(!listing)return;
-    modal('Купить коллекционный подарок','<p>Купить NFT «'+esc(listing.inventory?.gift?.gift_name||'Подарок TopGram')+'» за <b>'+Number(listing.price_stars).toLocaleString('ru-RU')+' ⭐</b>?</p><p class="tg-admin-hint">После покупки NFT и его уникальный номер перейдут в твой инвентарь.</p>',async()=>{
-      btn.disabled=true;
-      try{await tgGiftApi('buy_listing',{listing_id:listing.id});await tgGiftRefreshWallet();close();toast('NFT куплен и добавлен в твой инвентарь.');openGiftMarketplace()}
-      catch(error){toast(error.message);btn.disabled=false}
+    modal('Купить коллекционный подарок','<p>Купить NFT «'+esc(listing.inventory?.gift?.gift_name||'Подарок TopGram')+'» за <b>'+Number(listing.price_stars).toLocaleString('ru-RU')+' ⭐</b>?</p>',async()=>{
+      btn.disabled=true;try{await tgGiftApi('buy_listing',{listing_id:listing.id});await tgGiftRefreshWallet();close();toast('NFT куплен и добавлен в инвентарь.');openGiftMarketplace()}catch(error){toast(error.message);btn.disabled=false}
     },'Купить за '+Number(listing.price_stars).toLocaleString('ru-RU')+' ⭐');
   });
+  $('modalBody').querySelectorAll('.tg-auction-bid').forEach(btn=>btn.onclick=()=>{
+    const auction=auctions.find(x=>x.id===btn.dataset.auctionId);if(!auction)return;
+    modal('Ставка на NFT','<div class="tg-admin-form"><label for="tgAuctionBidAmount">Твоя ставка в Stars</label><input id="tgAuctionBidAmount" type="number" min="'+(Number(auction.current_price_stars)+1)+'" value="'+(Number(auction.current_price_stars)+1)+'"><p class="tg-admin-hint">Текущая ставка будет возвращена предыдущему участнику, если ты перебьёшь её.</p></div>',async()=>{
+      const amount=Number($('tgAuctionBidAmount').value);if(!Number.isSafeInteger(amount)||amount<=Number(auction.current_price_stars))return toast('Ставка должна быть выше текущей.');
+      try{await tgGiftApi('bid_auction',{auction_id:auction.id,amount_stars:amount});await tgGiftRefreshWallet();close();toast('Ставка принята.');openGiftMarketplace()}catch(e){toast(e.message)}
+    },'Подтвердить ставку');
+  });
   wireTopgramGiftImages($('modalBody'));
+}
+async function openGiftCrafting(){
+  let recipes=[],items=[];
+  try{const [r,i]=await Promise.all([tgGiftApi('list_craft_recipes'),tgGiftRefreshWallet()]);recipes=r.recipes||[];items=(i.inventory||[]).filter(x=>!x.upgraded_at)}catch(e){return toast(e.message)}
+  const rows=recipes.map(recipe=>{
+    const req=(recipe.ingredients||[]).map(x=>Number(x.quantity)+' × '+esc(x.gift_key)).join(' + ');
+    return '<div class="tg-inventory-card"><div class="tg-inventory-info"><b>'+esc(recipe.title)+'</b><small>'+esc(recipe.description||'')+'</small><small>Ингредиенты: '+req+'</small><small>Комиссия: '+Number(recipe.fee_stars||0).toLocaleString('ru-RU')+' ⭐</small><b>Результат: '+esc(recipe.result_gift?.gift_name||'Подарок')+'</b><button type="button" class="tg-craft-recipe" data-recipe-id="'+esc(recipe.id)+'">Создать подарок</button></div></div>';
+  }).join('');
+  modal('TopGram · мастерская подарков','<div class="gift-picker-head"><div><strong>Крафт</strong><small>Обменивай обычные подарки на новые по рецептам</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><strong>Пока нет доступных рецептов</strong></div>')+'</div>',close,'Назад');
+  $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
+  $('modalBody').querySelectorAll('.tg-craft-recipe').forEach(btn=>btn.onclick=()=>{
+    const recipe=recipes.find(x=>x.id===btn.dataset.recipeId);if(!recipe)return;
+    const chosen=[];
+    for(const ingredient of recipe.ingredients||[]){
+      const matches=items.filter(x=>x.gift?.gift_key===ingredient.gift_key&&!chosen.includes(x.id)).slice(0,Number(ingredient.quantity));
+      if(matches.length<Number(ingredient.quantity))return toast('Не хватает ингредиентов: '+ingredient.gift_key);
+      chosen.push(...matches.map(x=>x.id));
+    }
+    modal('Подтвердить крафт','<p>Создать «'+esc(recipe.result_gift?.gift_name||'подарок')+'»?</p><p>Будет использовано подарков: '+chosen.length+'. Комиссия: '+Number(recipe.fee_stars||0)+' ⭐.</p><p class="tg-admin-hint">Ингредиенты будут списаны без возможности отмены.</p>',async()=>{
+      try{await tgGiftApi('craft_gift',{recipe_id:recipe.id,inventory_ids:chosen});await tgGiftRefreshWallet();close();toast('Подарок создан!');openGiftCrafting()}catch(e){toast(e.message)}
+    },'Создать');
+  });
 }
 function openGiftListing(item){
   const minPrice=Math.max(1,Number(item.gift?.gift_manifest?.resell_min_stars||0));
