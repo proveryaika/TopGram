@@ -600,6 +600,35 @@ body.light .tg-inventory-card{background:#fff;border-color:#e8eaed}
 .tg-upgrade-reel small{letter-spacing:.2px}
 .tg-upgrade-result span{display:block}
 
+
+/* TopGram admin control center */
+.tg-admin-dashboard{display:flex;flex-direction:column;gap:14px;padding:4px 0 18px}
+.tg-admin-hero{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px;border-radius:18px;background:linear-gradient(135deg,#142d4b,#254c78);color:#fff}
+.tg-admin-hero h2{margin:5px 0;font-size:21px;letter-spacing:-.4px}
+.tg-admin-hero p{margin:0;color:#d3e4f7;font-size:12px}
+.tg-admin-kicker{font-size:9px;font-weight:800;letter-spacing:1.5px;color:#9dcfff}
+.tg-admin-hero>button{width:38px;height:38px;border:1px solid #ffffff44;border-radius:12px;background:#ffffff18;color:#fff;font-size:22px}
+.tg-admin-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.tg-admin-metrics>div{display:flex;flex-direction:column;gap:5px;padding:11px 9px;border:1px solid var(--tg-border,#dfe5eb);border-radius:13px;background:var(--tg-card,#fff);min-width:0}
+.tg-admin-metrics small{font-size:10px;color:var(--tg-muted,#778391);white-space:nowrap}
+.tg-admin-metrics b{font-size:19px;color:var(--tg-text,#17212b)}
+.tg-admin-dashboard-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tg-admin-dashboard-actions>button{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:13px;border:1px solid var(--tg-border,#dfe5eb);border-radius:14px;background:var(--tg-card,#fff);color:var(--tg-text,#17212b)}
+.tg-admin-dashboard-actions>button>span{font-size:21px}
+.tg-admin-dashboard-actions>button>b{font-size:13px}
+.tg-admin-dashboard-actions>button>small{font-size:10px;line-height:1.35;color:var(--tg-muted,#778391)}
+.tg-admin-catalog-tools{display:grid;grid-template-columns:minmax(0,1fr) 135px;gap:8px}
+.tg-admin-catalog-tools input,.tg-admin-catalog-tools select{min-width:0;width:100%;padding:10px;border:1px solid var(--tg-border,#dfe5eb);border-radius:10px;background:var(--tg-card,#fff);color:var(--tg-text,#17212b);font:inherit;font-size:12px}
+.tg-admin-catalog-list{display:flex;flex-direction:column;gap:7px}
+.tg-admin-catalog-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--tg-border,#dfe5eb);border-radius:13px;background:var(--tg-card,#fff)}
+.tg-admin-gift-icon{display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;border-radius:12px;background:var(--tg-secondary-bg,#eef3f8);font-size:22px}
+.tg-admin-gift-main{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.tg-admin-gift-main b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tg-text,#17212b)}
+.tg-admin-gift-main small{font-size:10px;color:var(--tg-muted,#778391)}
+.tg-admin-catalog-row>button,.tg-admin-dashboard-footer>button{border:0;border-radius:10px;background:#2488df;color:#fff;padding:9px 10px;font-size:11px;font-weight:700;white-space:nowrap}
+.tg-admin-empty{padding:22px 12px;text-align:center;color:var(--tg-muted,#778391);font-size:12px}
+.tg-admin-dashboard-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;color:var(--tg-muted,#778391)}
+@media(max-width:390px){.tg-admin-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.tg-admin-catalog-tools{grid-template-columns:1fr}.tg-admin-dashboard-footer{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
@@ -1162,6 +1191,47 @@ function wireTopgramGiftImages(root){
 function openGiftAdmin(){
   if(!topgramGiftAdmin)return toast('Админ-панель доступна только владельцу TopGram.');
   const gifts=topgramGiftRows.filter(g=>g.gift_type!=='collectible');
+  const active=gifts.filter(g=>g.is_active).length;
+  const nft=gifts.filter(g=>g.upgrade_enabled).length;
+  const issued=gifts.reduce((sum,g)=>sum+Number(g.issued_count||0),0);
+  const nftIssued=gifts.reduce((sum,g)=>sum+Number(g.upgrade_issued_count||0),0);
+  modal('TopGram · центр управления',
+    '<div class="tg-admin-dashboard">'+
+      '<div class="tg-admin-hero"><div><span class="tg-admin-kicker">TOPGRAM CONTROL CENTER</span><h2>Управление подарками</h2><p>Каталог, NFT-выпуски, наборы и операции платформы</p></div><button type="button" id="tgAdminRefresh" title="Обновить">↻</button></div>'+
+      '<div class="tg-admin-metrics">'+
+        '<div><small>Подарков</small><b>'+gifts.length+'</b></div><div><small>В каталоге</small><b>'+active+'</b></div><div><small>Продано</small><b>'+issued.toLocaleString('ru-RU')+'</b></div><div><small>NFT выпущено</small><b>'+nftIssued.toLocaleString('ru-RU')+'</b></div>'+
+      '</div>'+
+      '<div class="tg-admin-section-title">Разделы</div>'+
+      '<div class="tg-admin-dashboard-actions">'+
+        '<button type="button" data-admin-action="packs"><span>📦</span><b>Наборы подарков</b><small>ZIP · pack.json · предпросмотр · импорт</small></button>'+
+        '<button type="button" data-admin-action="stars"><span>⭐</span><b>Баланс Stars</b><small>Начисление пользователям</small></button>'+
+        '<button type="button" data-admin-action="usernames"><span>✦</span><b>Коллекционные имена</b><small>Назначение коллекционных юзернеймов</small></button>'+
+        '<button type="button" data-admin-action="stats"><span>📊</span><b>Статистика</b><small>Пользователи и балансы</small></button>'+
+      '</div>'+
+      '<div class="tg-admin-section-title">Каталог TopGram</div>'+
+      '<div class="tg-admin-catalog-tools"><input id="tgAdminGiftSearch" type="search" placeholder="Поиск подарка по названию…"><select id="tgAdminGiftFilter"><option value="all">Все подарки</option><option value="active">В каталоге</option><option value="hidden">Скрытые</option><option value="nft">С NFT-улучшением</option></select></div>'+
+      '<div id="tgAdminGiftRows" class="tg-admin-catalog-list"></div>'+
+      '<div class="tg-admin-dashboard-footer"><span>'+nft+' подарков с NFT-улучшением</span><button type="button" id="tgAdminNewPack">＋ Добавить подарки из ZIP</button></div>'+
+    '</div>',close,'Закрыть');
+  $('modalBackdrop').classList.add('gift-picker-backdrop');
+  $('modalTitle').style.display='none';
+  $('modalBody').classList.add('gift-picker-body');
+  const rows=$('tgAdminGiftRows');
+  const render=()=>{
+    const query=$('tgAdminGiftSearch').value.trim().toLowerCase(),filter=$('tgAdminGiftFilter').value;
+    const filtered=gifts.filter(g=>(!query||String(g.gift_name||'').toLowerCase().includes(query))&&(filter==='all'||(filter==='active'&&g.is_active)||(filter==='hidden'&&!g.is_active)||(filter==='nft'&&g.upgrade_enabled)));
+    rows.innerHTML=filtered.map(g=>'<div class="tg-admin-catalog-row"><div class="tg-admin-gift-icon">'+tgGiftSymbolGlyph(g.gift_name)+'</div><div class="tg-admin-gift-main"><b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars||0).toLocaleString('ru-RU')+' ⭐ · '+Number(g.issued_count||0).toLocaleString('ru-RU')+' / '+Number(g.total_supply||0).toLocaleString('ru-RU')+'</small><small>'+(g.is_active?'В каталоге':'Скрыт')+' · '+(g.upgrade_enabled?'NFT включён':'NFT выключен')+(g.upgrade_enabled?' · '+Number(g.upgrade_issued_count||0)+' / '+Number(g.upgrade_total_supply||0):'')+'</small></div><button type="button" data-edit-gift="'+esc(g.id)+'">Настроить</button></div>').join('')||'<div class="tg-admin-empty">Ничего не найдено. Загрузи ZIP-набор, чтобы добавить подарки.</div>';
+    rows.querySelectorAll('[data-edit-gift]').forEach(btn=>btn.onclick=()=>openGiftEditor(btn.dataset.editGift));
+  };
+  $('tgAdminGiftSearch').oninput=render;$('tgAdminGiftFilter').onchange=render;
+  $('tgAdminRefresh').onclick=async()=>{const b=$('tgAdminRefresh');b.disabled=true;try{await loadTopgramGiftAdmin();close();openGiftAdmin()}finally{b.disabled=false}};
+  $('tgAdminNewPack').onclick=openGiftPacksAdmin;
+  $('modalBody').querySelectorAll('[data-admin-action]').forEach(btn=>btn.onclick=()=>({packs:openGiftPacksAdmin,stars:openAdminGrantStars,usernames:openAdminCollectible,stats:openAdminStats}[btn.dataset.adminAction]||(()=>{}))());
+  render();
+}
+function openGiftEditor(selectedGiftId=null){
+  if(!topgramGiftAdmin)return toast('Админ-панель доступна только владельцу TopGram.');
+  const gifts=topgramGiftRows.filter(g=>g.gift_type!=='collectible');
   if(!gifts.length)return toast('Сначала импортируй обычные подарки через набор ZIP.');
   const options=gifts.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.gift_name)+'</option>').join('');
   const current=gifts.map(g=>'<div class="tg-admin-existing"><span>🎁 <b>'+esc(g.gift_name)+'</b><small>'+(g.is_active?'В каталоге':'Скрыт')+' · '+Number(g.issued_count||0)+' / '+Number(g.total_supply||0)+' продано</small></span><small>'+(g.upgrade_enabled?'NFT включён':'NFT выключен')+' · '+Number(g.upgrade_issued_count||0)+' / '+Number(g.upgrade_total_supply||0)+'</small></div>').join('');
@@ -1197,10 +1267,11 @@ function openGiftAdmin(){
         if(attributes&&['model','pattern','background'].every(k=>Array.isArray(attributes[k])&&attributes[k].length>=2)){
           await tgGiftApi('publish_collectible_version',{gift_id:gift.id,upgrade_enabled:$('tgUpgradeEnabled').checked,upgrade_price_stars:price,upgrade_total_supply:supply,attributes});
         }else if($('tgUpgradeEnabled').checked)throw new Error('Не удалось загрузить параметры NFT.');
-        await loadTopgramGiftAdmin();close();toast('Каталог TopGram обновлён.');openGiftAdmin();
+        await loadTopgramGiftAdmin();close();toast('Каталог TopGram обновлён.');openGiftEditor(gift.id);
       }catch(error){toast(error.message);$('confirmModal').disabled=false}
     },'Сохранить изменения');
   $('confirmModal').disabled=false;
+  if(selectedGiftId&&gifts.some(g=>g.id===selectedGiftId))$('tgUpgradeGift').value=selectedGiftId;
   $('tgAdminGrantStars').onclick=openAdminGrantStars;$('tgAdminCollectible').onclick=openAdminCollectible;$('tgAdminStats').onclick=openAdminStats;$('tgAdminPacks').onclick=openGiftPacksAdmin;
   const fill=async()=>{
     const gift=gifts.find(x=>x.id===$('tgUpgradeGift').value)||gifts[0];
