@@ -951,9 +951,10 @@ async function tgGiftLoadAttributes(gift){
     return response.json();
   };
   const result=await Promise.allSettled([load('models'),load('patterns'),load('backdrops')]);
-  const models=result[0].status==='fulfilled'?result[0].value.map(x=>x.name).filter(Boolean):[];
-  const patterns=result[1].status==='fulfilled'?result[1].value.map(x=>x.name).filter(Boolean):[];
-  const backgrounds=result[2].status==='fulfilled'?result[2].value.map(x=>x.name).filter(Boolean):[];
+  const toOptions=value=>(Array.isArray(value)?value:[]).filter(x=>x&&x.name).map(x=>({name:x.name,rarity_percent:Number(x.rarity_percent)>0?Number(x.rarity_percent):1}));
+  const models=result[0].status==='fulfilled'?toOptions(result[0].value):[];
+  const patterns=result[1].status==='fulfilled'?toOptions(result[1].value):[];
+  const backgrounds=result[2].status==='fulfilled'?toOptions(result[2].value):[];
   const options={
     model:models.length?models:tgGiftUpgradeOptions.model.values,
     pattern:patterns.length?patterns:tgGiftUpgradeOptions.pattern.values,
@@ -966,10 +967,14 @@ function tgGiftPrettyAttribute(value){
   return String(value||'').replace(/_/g,' ').replace(/\s+/g,' ').trim().replace(/\b\w/g,c=>c.toUpperCase());
 }
 function tgGiftRandomFrom(values,current){
-  const pool=values.filter(v=>v!==current),items=pool.length?pool:values;
+  const entries=values.map(value=>typeof value==='string'?{name:value,weight:1}:{name:value.name,weight:Number(value.rarity_percent)>0?Number(value.rarity_percent):1}).filter(x=>x.name);
+  const pool=entries.filter(x=>x.name!==current),items=pool.length?pool:entries;
   if(!items.length)return current||'';
+  const total=items.reduce((sum,item)=>sum+item.weight,0);
   const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);
-  return items[bytes[0]%items.length];
+  let roll=(bytes[0]/4294967296)*total;
+  for(const item of items){roll-=item.weight;if(roll<0)return item.name}
+  return items[items.length-1].name;
 }
 function tgGiftSymbolGlyph(name){
   const n=String(name||'').toLowerCase();
