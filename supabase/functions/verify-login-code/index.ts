@@ -19,14 +19,29 @@ async function hmac(secret: string, value: string): Promise<string> {
   return Array.from(new Uint8Array(signature), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
+};
+
+function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
+  const headers = new Headers(init.headers);
+  for (const [key, value] of Object.entries(corsHeaders)) headers.set(key, value);
+  headers.set("Content-Type", "application/json");
+  return new Response(JSON.stringify(body), { ...init, headers });
+}
+
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   try {
     const body = await req.json();
     const digits = digitsOnly(String(body.number ?? ""));
     const code = String(body.code ?? "").trim();
     if (!/^([17])[0-9]{10}$/.test(digits) || !/^[0-9]{6}$/.test(code)) {
-      return Response.json({ error: "Неверный номер или код." }, { status: 400 });
+      return jsonResponse({ error: "Неверный номер или код." }, { status: 400 });
     }
 
     const { data: numberRow } = await admin
@@ -34,7 +49,7 @@ Deno.serve(async (req) => {
       .select("id,telegram_user_id,auth_user_id")
       .eq("number_digits", digits)
       .maybeSingle();
-    if (!numberRow) return Response.json({ error: "Неверный номер или код." }, { status: 400 });
+    if (!numberRow) return jsonResponse({ error: "Неверный номер или код." }, { status: 400 });
 
     const { data: challenge } = await admin
       .from("login_challenges")
@@ -46,7 +61,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!challenge || new Date(challenge.expires_at).getTime() < Date.now() || challenge.attempts >= 5) {
-      return Response.json({ error: "Код истёк. Запроси новый." }, { status: 400 });
+      return jsonResponse({ error: "Код истёк. Запроси новый." }, { status: 400 });
     }
 
     const expected = await hmac(HASH_SECRET, `${digits}:${code}`);
@@ -54,7 +69,7 @@ Deno.serve(async (req) => {
       await admin.from("login_challenges")
         .update({ attempts: challenge.attempts + 1 })
         .eq("id", challenge.id);
-      return Response.json({ error: "Неверный номер или код." }, { status: 400 });
+      return jsonResponse({ error: "Неверный номер или код." }, { status: 400 });
     }
 
     await admin.from("login_challenges")
@@ -74,7 +89,7 @@ Deno.serve(async (req) => {
         user_metadata: { telegram_user_id: numberRow.telegram_user_id },
       });
       if (createError || !created.user) {
-        return Response.json({ error: "Не удалось создать аккаунт. Повтори вход." }, { status: 500 });
+        return jsonResponse({ error: "Не удалось создать аккаунт. Повтори вход." }, { status: 500 });
       }
       userId = created.user.id;
       const { error: linkError } = await admin.from("virtual_numbers")
@@ -87,7 +102,7 @@ Deno.serve(async (req) => {
     const client = createClient(URL, ANON_KEY, { auth: { persistSession: false } });
     const { data: sessionData, error: signInError } = await client.auth.signInWithPassword({ email, password });
     if (signInError || !sessionData.session) {
-      return Response.json({ error: "Не удалось войти. Попробуй ещё раз." }, { status: 500 });
+      return jsonResponse({ error: "Не удалось войти. Попробуй ещё раз." }, { status: 500 });
     }
 
     // Save the app's virtual number in the shared profile table.
@@ -113,8 +128,8 @@ Deno.serve(async (req) => {
       if (profileInsertError) throw profileInsertError;
     }
 
-    return Response.json({ session: sessionData.session, user: sessionData.user, virtual_number: digits });
+    return jsonResponse({ session: sessionData.session, user: sessionData.user, virtual_number: digits });
   } catch (_error) {
-    return Response.json({ error: "Внутренняя ошибка входа." }, { status: 500 });
+    return jsonResponse({ error: "Внутренняя ошибка входа." }, { status: 500 });
   }
 });
