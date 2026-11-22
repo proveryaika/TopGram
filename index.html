@@ -517,6 +517,20 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 .tg-stats-table th{position:sticky;top:0;background:#263746;color:#aebdca}
 
 .tg-upgrade-result{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;padding:12px;border-radius:14px;background:linear-gradient(120deg,#283c55,#40365f);color:#f4e8ff;font-size:13px;text-align:center;min-height:42px;align-items:center}.tg-upgrade-result strong{width:100%;font-size:16px;color:#ffe18a}.tg-upgrade-result span{padding:5px 9px;border:1px solid #ffffff24;border-radius:20px;background:#ffffff10}.tg-upgrade-disclosure{font-size:12px;line-height:1.45;color:#9eafbd;text-align:center;margin:0 8px}
+
+.tg-gift-art.tg-collectible-art{background:none!important;box-shadow:0 8px 24px #0005;isolation:isolate}
+.tg-gift-art.tg-collectible-art>span,.tg-gift-art.tg-collectible-art>img{display:none!important}
+.tg-gift-art.tg-collectible-art svg{display:block;width:100%;height:100%;overflow:visible}
+.tg-upgrade-stage{position:relative;background:radial-gradient(ellipse at 50% 45%,#526b8c,#1a263b 72%,#101927)}
+.tg-upgrade-stage:before{content:"";position:absolute;inset:12px;border:1px solid #ffffff20;border-radius:17px;pointer-events:none}
+.tg-upgrade-stage .tg-gift-art{width:158px;height:158px;border-radius:30px;overflow:visible}
+.tg-upgrade-stage.tg-spinning .tg-gift-art{animation:tgGiftSpin 1.25s cubic-bezier(.15,.7,.2,1) both}
+.tg-inventory-card .tg-gift-art{overflow:visible;border-radius:20px}
+.profile-gift-card .tg-gift-art{overflow:visible;border-radius:20px}
+.tg-upgrade-reel{background:linear-gradient(160deg,#253c58,#182a40);box-shadow:inset 0 1px #ffffff20,0 4px 12px #0002}
+.tg-upgrade-reel b{font-size:11px}
+.tg-collectible-art{transition:transform .25s ease,filter .25s ease}
+.tg-collectible-art:active{transform:scale(.97)}
 </style>
 </head>
 <body>
@@ -858,7 +872,50 @@ async function tgGiftRefreshWallet(){
   const balance=$('starsPageBalance');if(balance)balance.textContent=topgramStars.toLocaleString('ru-RU');
   return data;
 }
-function tgGiftCardArt(gift){return giftImageMarkup(gift.asset_key,gift.gift_key)}
+let tgArtCounter=0;
+function tgGiftCardArt(gift,attrs={}){
+  const model=attrs.model||'Золотая',pattern=attrs.pattern||'Звёздный',background=attrs.background||'Ночное небо';
+  const palettes={
+    'Ночное небо':['#101a49','#4356a8','#c7d7ff'],'Аметист':['#32145f','#a15be8','#f3d1ff'],
+    'Изумруд':['#063f39','#13a887','#c3ffe4'],'Закат':['#7b2455','#ff8b50','#ffe4a8'],
+    'Северное сияние':['#073d50','#20c6b4','#b8ffe9'],'Золотая пыль':['#70420b','#e9b84d','#fff1ae'],
+    'Ледяной дворец':['#315d83','#9ce6ff','#ffffff'],'Космос':['#17133e','#764de0','#e7c5ff'],
+    'Розовый рассвет':['#792d66','#ff9bc9','#ffe6f3'],'Лаванда':['#51417d','#b8a4ff','#f3eaff'],
+    'Океан':['#063c66','#20a8d8','#c8f5ff'],'Рубиновый свет':['#5a102a','#e33d68','#ffc1d0'],
+    'Звёздная галактика':['#21134e','#a35cff','#f5d5ff'],'Солнечная вспышка':['#8c4514','#ffbd45','#fff1a8']
+  };
+  const colors=palettes[background]||palettes['Ночное небо'];
+  const patterns={
+    'Звёздный':'<g fill="none" stroke="url(#shine)" stroke-width="2"><path d="M28 32l3 8 8 3-8 3-3 8-3-8-8-3 8-3zM145 35l2 6 6 2-6 2-2 6-2-6-6-2 6-2zM130 135l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/></g>',
+    'Геометрия':'<g fill="none" stroke="url(#shine)" stroke-width="2"><path d="M0 35L35 0 70 35 35 70zM110 110l25-25 25 25-25 25zM0 125l25-25 25 25-25 25z"/></g>',
+    'Волны':'<g fill="none" stroke="url(#shine)" stroke-width="3" opacity=".8"><path d="M-10 35Q15 10 40 35T90 35T140 35T190 35M-10 75Q15 50 40 75T90 75T140 75T190 75M-10 115Q15 90 40 115T90 115T140 115T190 115"/></g>',
+    'Орнамент':'<g fill="none" stroke="url(#shine)" stroke-width="2"><path d="M80 8c20 18 20 35 0 52-20-17-20-34 0-52zm0 92c20 18 20 35 0 52-20-17-20-34 0-52zM28 80c18-20 35-20 52 0-17 20-34 20-52 0zm72 0c18-20 35-20 52 0-17 20-34 20-52 0z"/></g>',
+    'Мозаика':'<g fill="none" stroke="url(#shine)" stroke-width="2"><path d="M0 0h40v40H0zM80 0h40v40H80zM40 40h40v40H40zM120 40h40v40h-40zM0 80h40v40H0zM80 80h40v40H80zM40 120h40v40H40zM120 120h40v40h-40z"/></g>',
+    'Искры':'<g fill="url(#shine)"><circle cx="25" cy="32" r="3"/><circle cx="130" cy="25" r="2"/><circle cx="145" cy="115" r="3"/><circle cx="35" cy="130" r="2"/><path d="M80 18l4 12 12 4-12 4-4 12-4-12-12-4 12-4z"/></g>',
+    'Цветы':'<g fill="none" stroke="url(#shine)" stroke-width="2"><g transform="translate(28 35)"><circle r="7"/><circle cy="-12" r="7"/><circle cy="12" r="7"/><circle cx="-12" r="7"/><circle cx="12" r="7"/></g><g transform="translate(135 120)"><circle r="7"/><circle cy="-12" r="7"/><circle cy="12" r="7"/><circle cx="-12" r="7"/><circle cx="12" r="7"/></g></g>',
+    'Кристаллы':'<g fill="none" stroke="url(#shine)" stroke-width="2"><path d="M25 20l15 8 5 20-20 12-18-12 4-20zM130 95l15 8 5 20-20 12-18-12 4-20zM90 5l8 5 3 12-11 7-10-7 2-12z"/></g>',
+    'Градиент':'<g fill="none" stroke="url(#shine)" stroke-width="7" opacity=".5"><path d="M0 35Q80 95 160 35M0 80Q80 140 160 80M0 125Q80 185 160 125"/></g>',
+    'Пиксели':'<g fill="url(#shine)"><path d="M15 20h12v12H15zM39 44h12v12H39zM123 22h12v12h-12zM99 46h12v12H99zM20 112h12v12H20zM132 125h12v12h-12zM76 12h8v8h-8zM70 138h8v8h-8z"/></g>',
+    'Лепестки':'<g fill="none" stroke="url(#shine)" stroke-width="2"><path d="M80 15Q110 45 80 75Q50 45 80 15zm0 70q30 30 0 60Q50 115 80 85zM20 80q30-30 60 0Q50 110 20 80zm60 0q30-30 60 0-30 30-60 0z"/></g>',
+    'Кометы':'<g fill="none" stroke="url(#shine)" stroke-width="4" stroke-linecap="round"><path d="M15 45L65 20M95 90l50-25M18 130l35-18"/><circle cx="68" cy="18" r="5" fill="#fff"/><circle cx="148" cy="62" r="5" fill="#fff"/></g>'
+  };
+  const models={
+    'Золотая':'<path d="M43 65L80 42l37 23-37 24z" fill="#fff0a8"/><path d="M43 65v43l37 23V89z" fill="#d58a24"/><path d="M117 65v43l-37 23V89z" fill="#ffcf58"/><path d="M80 42l12 8-37 24-12-9z" fill="#fff0a8"/><path d="M80 42l37 23-12 9-37-24z" fill="#ffe28a"/><path d="M80 89v42" stroke="#fff5cb" stroke-width="4"/>',
+    'Сапфировая':'<path d="M80 25L125 65 80 137 35 65z" fill="#3b9dff" stroke="#c5edff" stroke-width="4"/><path d="M35 65h90L80 137z" fill="#1764c7"/><path d="M80 25v112M35 65l45-40 45 40" fill="none" stroke="#a9dcff" stroke-width="3"/>',
+    'Рубиновая':'<path d="M80 25L130 60 112 120 48 120 30 60z" fill="#f34c70" stroke="#ffc0d0" stroke-width="4"/><path d="M30 60h100L80 137z" fill="#a9113f"/><path d="M80 25v112M30 60l50 10 50-10" fill="none" stroke="#ffb3c7" stroke-width="3"/>',
+    'Кристальная':'<path d="M80 18L128 57 110 125 50 125 32 57z" fill="#d9f8ff" stroke="#fff" stroke-width="4"/><path d="M80 18v119M32 57h96M50 125l30-68 30 68" fill="none" stroke="#7dc9ed" stroke-width="3"/>',
+    'Аметистовая':'<path d="M80 20L125 55 115 118 80 140 45 118 35 55z" fill="#bd83ff" stroke="#f0d6ff" stroke-width="4"/><path d="M80 20v120M35 55l45 18 45-18M45 118l35-45 35 45" fill="none" stroke="#713bc2" stroke-width="3"/>',
+    'Жемчужная':'<circle cx="80" cy="82" r="48" fill="#fff3f8" stroke="#fff" stroke-width="5"/><ellipse cx="65" cy="60" rx="20" ry="11" fill="#fff" opacity=".85"/><path d="M42 105q38 27 76 0" fill="none" stroke="#e8b7d5" stroke-width="4"/>',
+    'Изумрудная':'<path d="M45 35h70l25 35-60 65-60-65z" fill="#18c78b" stroke="#b6ffe2" stroke-width="4"/><path d="M45 35l35 100 35-100M20 70h120" fill="none" stroke="#087d62" stroke-width="4"/>',
+    'Лунная':'<path d="M100 28a54 54 0 1 0 36 91A48 48 0 0 1 100 28z" fill="#e9f1ff" stroke="#fff" stroke-width="4"/><circle cx="55" cy="55" r="4" fill="#fff"/>',
+    'Огненная':'<path d="M80 20c10 30 43 38 34 76-6 27-54 35-66 3-12-29 13-49 32-79z" fill="#ff7a32" stroke="#ffd27b" stroke-width="4"/><path d="M82 65c18 18 15 35 0 48-17-13-18-30 0-48z" fill="#fff1a1"/>',
+    'Ледяная':'<path d="M80 18v124M26 49l108 62M26 111L134 49M80 18l-12 16m12-16 12 16M80 142l-12-16m12 16 12-16" stroke="#e4faff" stroke-width="8" stroke-linecap="round"/><circle cx="80" cy="80" r="19" fill="#8ce4ff" stroke="#fff" stroke-width="4"/>',
+    'Космическая':'<circle cx="80" cy="80" r="43" fill="#5a3acb" stroke="#d8c5ff" stroke-width="4"/><ellipse cx="80" cy="80" rx="67" ry="22" transform="rotate(-25 80 80)" fill="none" stroke="#ffb5e9" stroke-width="7"/><circle cx="80" cy="80" r="12" fill="#fff"/>',
+    'Радужная':'<path d="M80 22L96 58l39 4-29 26 9 39-35-20-35 20 9-39-29-26 39-4z" fill="#ffda67" stroke="#fff3c4" stroke-width="4"/><path d="M80 22v105M28 62l104 0M45 127l70-69" stroke="#fff" stroke-width="3" opacity=".65"/>'
+  };
+  const id='tgart'+(++tgArtCounter);
+  return '<div class="tg-gift-art tg-collectible-art" data-model="'+esc(model)+'" data-pattern="'+esc(pattern)+'" data-background="'+esc(background)+'"><svg viewBox="0 0 160 160" role="img" aria-label="'+esc(model+', '+pattern+', '+background)+'" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="'+id+'bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="'+colors[0]+'"/><stop offset=".55" stop-color="'+colors[1]+'"/><stop offset="1" stop-color="'+colors[2]+'"/></linearGradient><linearGradient id="'+id+'shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="'+colors[2]+'"/></linearGradient><filter id="'+id+'shadow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter></defs><rect width="160" height="160" rx="25" fill="url(#'+id+'bg)"/><circle cx="80" cy="80" r="68" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.5"/>'+ (patterns[pattern]||patterns['Звёздный']) +'<ellipse cx="80" cy="137" rx="38" ry="8" fill="#080d25" opacity=".35" filter="url(#'+id+'shadow)"/><g filter="drop-shadow(0 8px 7px #07102088)">'+(models[model]||models['Золотая'])+'</g><path d="M18 18l5 2 2 5 2-5 5-2-5-2-2-5-2 5zM133 27l3 1 1 3 1-3 3-1-3-1-1-3-1 3z" fill="#fff" opacity=".9"/></svg></div>';
+}
 function tgRandomGiftValue(key,current){
   const values=tgGiftUpgradeOptions[key].values.filter(v=>v!==current);
   const pool=values.length?values:tgGiftUpgradeOptions[key].values;
@@ -883,7 +940,7 @@ async function openGiftMarket(){
 async function openGiftInventory(){
   let data;try{data=await tgGiftRefreshWallet()}catch(e){return toast(e.message)}
   const items=data.inventory||[];
-  const rows=items.map(item=>{const g=item.gift||{},attrs=item.attributes||{};return '<div class="tg-inventory-card">'+tgGiftCardArt(g)+'<div class="tg-inventory-info"><b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>Модель: '+esc(attrs.model||'Классическая')+'</small><small>Узор: '+esc(attrs.pattern||'Без узора')+'</small><small>Фон: '+esc(attrs.background||'Стандартный')+'</small><button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'">🎰 Улучшить бесплатно</button></div></div>'}).join('');
+  const rows=items.map(item=>{const g=item.gift||{},attrs=item.attributes||{};return '<div class="tg-inventory-card">'+tgGiftCardArt(g,attrs)+'<div class="tg-inventory-info"><b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>Модель: '+esc(attrs.model||'Классическая')+'</small><small>Узор: '+esc(attrs.pattern||'Без узора')+'</small><small>Фон: '+esc(attrs.background||'Стандартный')+'</small><button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'">🎰 Улучшить бесплатно</button></div></div>'}).join('');
   modal('Подарки','<div class="gift-picker-head"><div><strong>Подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут показаны здесь.</p></div>')+'</div>',close,'Готово');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
   $('modalBody').querySelectorAll('.tg-upgrade-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftUpgrade(item)});
@@ -891,7 +948,7 @@ async function openGiftInventory(){
 }
 function openGiftUpgrade(item){
   const gift=item.gift||{},attrs=item.attributes||{};
-  const body='<div class="tg-upgrade-screen"><div class="tg-upgrade-stage" id="tgUpgradeStage">'+tgGiftCardArt(gift)+'</div><div class="tg-upgrade-reels" id="tgUpgradeReels"><div class="tg-upgrade-reel"><small>Модель</small><b id="tgReelModel">'+esc(attrs.model||'Золотая')+'</b></div><div class="tg-upgrade-reel"><small>Узор</small><b id="tgReelPattern">'+esc(attrs.pattern||'Звёздный')+'</b></div><div class="tg-upgrade-reel"><small>Фон</small><b id="tgReelBackground">'+esc(attrs.background||'Ночное небо')+'</b></div></div><h3>'+esc(gift.gift_name||'Подарок')+'</h3><p class="tg-upgrade-subtitle">🎰 Все три характеристики выпадут случайно одновременно</p><div class="tg-current-attributes"><span>Сейчас: '+esc(attrs.model||'Классическая')+' · '+esc(attrs.pattern||'Без узора')+' · '+esc(attrs.background||'Стандартный')+'</span></div><div class="tg-upgrade-result" id="tgUpgradeResult">Нажми кнопку, чтобы запустить рулетку</div><p class="tg-upgrade-disclosure">Улучшение полностью бесплатное. Новые модель, узор и фон сохранятся в инвентаре.</p></div>';
+  const body='<div class="tg-upgrade-screen"><div class="tg-upgrade-stage" id="tgUpgradeStage">'+tgGiftCardArt(gift,attrs)+'</div><div class="tg-upgrade-reels" id="tgUpgradeReels"><div class="tg-upgrade-reel"><small>Модель</small><b id="tgReelModel">'+esc(attrs.model||'Золотая')+'</b></div><div class="tg-upgrade-reel"><small>Узор</small><b id="tgReelPattern">'+esc(attrs.pattern||'Звёздный')+'</b></div><div class="tg-upgrade-reel"><small>Фон</small><b id="tgReelBackground">'+esc(attrs.background||'Ночное небо')+'</b></div></div><h3>'+esc(gift.gift_name||'Подарок')+'</h3><p class="tg-upgrade-subtitle">🎰 Все три характеристики выпадут случайно одновременно</p><div class="tg-current-attributes"><span>Сейчас: '+esc(attrs.model||'Классическая')+' · '+esc(attrs.pattern||'Без узора')+' · '+esc(attrs.background||'Стандартный')+'</span></div><div class="tg-upgrade-result" id="tgUpgradeResult">Нажми кнопку, чтобы запустить рулетку</div><p class="tg-upgrade-disclosure">Улучшение полностью бесплатное. Новые модель, узор и фон сохранятся в инвентаре.</p></div>';
   modal('Рулетка улучшения',body,async()=>{
     const resultAttributes={model:tgRandomGiftValue('model',attrs.model),pattern:tgRandomGiftValue('pattern',attrs.pattern),background:tgRandomGiftValue('background',attrs.background)};
     const stage=$('tgUpgradeStage'),reels=$('tgUpgradeReels');
@@ -937,7 +994,7 @@ async function renderProfileGifts(){
     if(!items.length){area.innerHTML='<div class="profile-gifts-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут отображаться здесь.</p></div>';return}
     area.innerHTML='<div class="profile-gifts-grid">'+items.map(item=>{
       const g=item.gift||{},a=item.attributes||{};
-      return '<div class="profile-gift-card">'+tgGiftCardArt(g)+'<b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>'+esc(a.model||'Классическая')+'</small><small>'+esc(a.pattern||'Без узора')+'</small><small>'+esc(a.background||'Стандартный')+'</small><button type="button" class="profile-gift-upgrade" data-id="'+esc(item.id)+'">Улучшить</button></div>';
+      return '<div class="profile-gift-card">'+tgGiftCardArt(g,a)+'<b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>'+esc(a.model||'Классическая')+'</small><small>'+esc(a.pattern||'Без узора')+'</small><small>'+esc(a.background||'Стандартный')+'</small><button type="button" class="profile-gift-upgrade" data-id="'+esc(item.id)+'">Улучшить</button></div>';
     }).join('')+'</div>';
     area.querySelectorAll('.profile-gift-upgrade').forEach(btn=>btn.onclick=()=>{const item=items.find(x=>x.id===btn.dataset.id);if(item)openGiftUpgrade(item)});
     wireTopgramGiftImages(area);
