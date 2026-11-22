@@ -1580,7 +1580,8 @@ async function openGiftMarketplace(){
     return '<div class="tg-inventory-card">'+tgGiftCardArt(gift,attrs)+'<div class="tg-inventory-info"><b>'+esc(gift.gift_name||'Коллекционный подарок')+' <span class="tg-nft-label">АУКЦИОН</span></b>'+
       '<small>№ '+Number(item.serial_number||0)+' · @'+esc(a.seller_username||'TopGram')+'</small><small>До: '+new Date(a.ends_at).toLocaleString('ru-RU')+'</small>'+
       '<b>Текущая ставка: '+Number(a.current_price_stars).toLocaleString('ru-RU')+' ⭐</b>'+
-      '<button type="button" class="tg-auction-bid" data-auction-id="'+esc(a.id)+'" data-price="'+Number(a.current_price_stars)+'">Сделать ставку</button></div></div>';
+      '<button type="button" class="tg-auction-bid" data-auction-id="'+esc(a.id)+'" data-price="'+Number(a.current_price_stars)+'">Сделать ставку</button>'+
+      (a.seller_id===tgCurrentUserId()?'<button type="button" class="tg-auction-close" data-auction-id="'+esc(a.id)+'">Завершить / отменить</button>':'')+'</div></div>';
   }).join('');
   modal('TopGram · рынок подарков',
     '<div class="gift-picker-head"><div><strong>Коллекционные подарки</strong><small>Покупка NFT и участие в аукционах за Stars</small></div></div>'+
@@ -1600,6 +1601,9 @@ async function openGiftMarketplace(){
     modal('Купить коллекционный подарок','<p>Купить NFT «'+esc(listing.inventory?.gift?.gift_name||'Подарок TopGram')+'» за <b>'+Number(listing.price_stars).toLocaleString('ru-RU')+' ⭐</b>?</p>',async()=>{
       btn.disabled=true;try{await tgGiftApi('buy_listing',{listing_id:listing.id});await tgGiftRefreshWallet();close();toast('NFT куплен и добавлен в инвентарь.');openGiftMarketplace()}catch(error){toast(error.message);btn.disabled=false}
     },'Купить за '+Number(listing.price_stars).toLocaleString('ru-RU')+' ⭐');
+  });
+  $('modalBody').querySelectorAll('.tg-auction-close').forEach(btn=>btn.onclick=async()=>{
+    try{const result=await tgGiftApi('close_auction',{auction_id:btn.dataset.auctionId});await tgGiftRefreshWallet();toast(result.result?.winner?'Аукцион завершён, NFT передан победителю.':'Аукцион отменён.');openGiftMarketplace()}catch(e){toast(e.message)}
   });
   $('modalBody').querySelectorAll('.tg-auction-bid').forEach(btn=>btn.onclick=()=>{
     const auction=auctions.find(x=>x.id===btn.dataset.auctionId);if(!auction)return;
