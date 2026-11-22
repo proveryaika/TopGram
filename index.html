@@ -1904,14 +1904,33 @@ function openGiftEditor(selectedGiftId=null){
 }
 
 function openAdminGrantStars(){
-  modal('Выдать звёзды','<div class="tg-admin-form"><label for="tgGrantUsername">Обычный юзернейм пользователя</label><input id="tgGrantUsername" maxlength="25" placeholder="@username" autocapitalize="none"><label for="tgGrantAmount">Количество звёзд</label><input id="tgGrantAmount" type="number" min="1" max="1000000000" step="1" value="500" inputmode="numeric"><p class="tg-admin-hint">Звёзды будут добавлены к текущему балансу выбранного аккаунта.</p></div>',async()=>{
+  let verifiedUsername='',verifiedTarget=null,checking=false;
+  modal('Выдать звёзды','<div class="tg-admin-form"><label for="tgGrantUsername">Обычный юзернейм пользователя</label><input id="tgGrantUsername" maxlength="25" placeholder="@username" autocapitalize="none" autocomplete="off"><button type="button" id="tgGrantVerify" class="tg-admin-secondary">Проверить пользователя</button><div id="tgGrantVerification" class="tg-admin-hint" role="status">Сначала проверь аккаунт. Начисление станет доступно после успешной проверки.</div><label for="tgGrantAmount">Количество звёзд</label><input id="tgGrantAmount" type="number" min="1" max="1000000000" step="1" value="500" inputmode="numeric"><p class="tg-admin-hint">После проверки покажем имя аккаунта и текущий баланс. Выдача выполняется сервером и повторно проверяет юзернейм.</p></div>',async()=>{
     const username=$('tgGrantUsername').value.trim().replace(/^@/,'').toLowerCase(),amount=Number($('tgGrantAmount').value);
     if(!/^[a-z0-9_]{5,24}$/.test(username))return toast('Проверь обычный юзернейм.');
+    if(verifiedUsername!==username||!verifiedTarget)return toast('Сначала нажми «Проверить пользователя» и убедись, что выбран нужный аккаунт.');
+    if(!verifiedTarget.wallet_exists)return toast('У пользователя пока нет кошелька Stars. Начисление остановлено.');
     if(!Number.isSafeInteger(amount)||amount<1||amount>1000000000)return toast('Укажи количество от 1 до 1 000 000 000.');
     $('confirmModal').disabled=true;
     try{const r=await tgGiftApi('grant_stars',{username,amount});close();toast('Начислено '+r.result.stars_added.toLocaleString('ru-RU')+' ⭐ пользователю @'+r.result.username+'. Баланс: '+r.result.balance.toLocaleString('ru-RU')+' ⭐')}
     catch(e){toast(e.message);$('confirmModal').disabled=false}
   },'Выдать звёзды');
+  const input=$('tgGrantUsername'),verify=$('tgGrantVerify'),status=$('tgGrantVerification');
+  input.oninput=()=>{verifiedUsername='';verifiedTarget=null;status.textContent='Юзернейм изменён — проверь пользователя заново.';status.className='tg-admin-hint';};
+  verify.onclick=async()=>{
+    const username=input.value.trim().replace(/^@/,'').toLowerCase();
+    if(!/^[a-z0-9_]{5,24}$/.test(username)){status.textContent='Укажи корректный юзернейм (5–24 символа).';status.className='tg-admin-hint';return}
+    if(checking)return;checking=true;verify.disabled=true;verify.textContent='Проверяем…';status.textContent='Ищем аккаунт и проверяем кошелёк Stars…';
+    try{
+      const result=await tgGiftApi('verify_grant_target',{username});
+      if(!result.verified||!result.target)throw new Error('Аккаунт не прошёл проверку.');
+      verifiedUsername=username;verifiedTarget=result.target;
+      const t=result.target;
+      status.textContent='✓ Аккаунт подтверждён: @'+t.username+(t.display_name?' · '+t.display_name:'')+(t.topgram_id?' · ID '+t.topgram_id:'')+' · баланс '+Number(t.balance||0).toLocaleString('ru-RU')+' ⭐'+(t.wallet_exists?'':' · кошелёк не создан, выдача заблокирована');
+      status.className='tg-admin-hint '+(t.wallet_exists?'success':'warning');
+    }catch(e){verifiedUsername='';verifiedTarget=null;status.textContent='Проверка не пройдена: '+e.message;status.className='tg-admin-hint error'}
+    finally{checking=false;verify.disabled=false;verify.textContent='Проверить пользователя'}
+  };
 }
 function openAdminCollectible(){
   modal('Выдать коллекционный юзернейм','<div class="tg-admin-form"><label for="tgCollectTarget">Обычный юзернейм пользователя</label><input id="tgCollectTarget" maxlength="25" placeholder="@username" autocapitalize="none"><label for="tgCollectValue">Коллекционный юзернейм</label><input id="tgCollectValue" maxlength="33" placeholder="rare_username" autocapitalize="none"><p class="tg-admin-hint">Обычный юзернейм останется у пользователя. Коллекционный будет отдельным закреплённым именем.</p></div>',async()=>{
