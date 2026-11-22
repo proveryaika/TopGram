@@ -463,7 +463,7 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 
 .tg-market-balance{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;margin:0 0 18px;border-radius:13px;background:#202f40;color:#aab8c5}.tg-market-balance b{color:#f4d36e;font-size:16px}
 .tg-inventory-list{display:flex;flex-direction:column;gap:12px}
-.tg-inventory-card{display:flex;gap:13px;padding:12px;border:1px solid #34485a;border-radius:16px;background:#202f40}
+.tg-plain-gift-art{background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;overflow:visible!important}.tg-plain-gift-art img{width:100%;height:100%;object-fit:contain;display:block;background:transparent!important}.tg-nft-label{display:inline-block;color:#d9b7ff;font-weight:700}.tg-transfer-open,.profile-gift-transfer{align-self:flex-start;margin-top:6px;border:0;border-radius:9px;padding:8px 14px;background:#344b63;color:#fff;font-weight:650}\n.tg-inventory-card{display:flex;gap:13px;padding:12px;border:1px solid #34485a;border-radius:16px;background:#202f40}
 .tg-inventory-card .tg-gift-art{width:100px;height:100px;flex:none}
 .tg-inventory-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
 .tg-inventory-info>b{font-size:15px}
@@ -877,28 +877,46 @@ function wireTopgramGiftImages(root){
   });
 }
 function openGiftAdmin(){
-  if(!topgramGiftAdmin)return toast('Админ-панель доступна только владельцу +888 8888.');
+  if(!topgramGiftAdmin)return toast('Админ-панель доступна только владельцу TopGram.');
   const library=giftDesignLibrary();
   const options=library.collections.map(name=>'<option value="'+esc(name)+'">'+esc(name)+'</option>').join('');
-  const current=topgramGiftRows.map(g=>'<div class="tg-admin-existing"><span>🎁 <b>'+esc(g.gift_name)+'</b></span><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐ · осталось '+Math.max(0,Number(g.total_supply)-Number(g.issued_count))+' из '+Number(g.total_supply)+'</small></div>').join('');
-  modal('Админ-панель',
-    '<div class="tg-admin-wrap"><div class="tg-admin-tools"><button type="button" id="tgAdminGrantStars">⭐ Выдать звёзды</button><button type="button" id="tgAdminCollectible">✦ Выдать коллекционный юзернейм</button><button type="button" id="tgAdminStats">📊 Просмотреть статистику</button></div><p class="tg-admin-hint">Выпуск обычного подарка TopGram. Укажи стоимость и общий тираж.</p>'+
-    '<label for="tgGiftDesign">Дизайн подарка</label><select id="tgGiftDesign">'+options+'</select>'+
-    '<label for="tgGiftPrice">Стоимость в звёздах</label><input id="tgGiftPrice" type="number" min="1" max="1000000000" step="1" value="100" inputmode="numeric">'+
-    '<label for="tgGiftSupply">Тираж (сколько выпустить)</label><input id="tgGiftSupply" type="number" min="1" max="1000000" step="1" value="100" inputmode="numeric">'+
-    '<div class="tg-admin-section-title">Уже выпущенные подарки</div>'+(current||'<p class="tg-admin-empty">Пока ничего не выпущено.</p>')+'</div>',
+  const current=topgramGiftRows.map(g=>'<div class="tg-admin-existing"><span>🎁 <b>'+esc(g.gift_name)+'</b> '+(g.gift_type==='collectible'?'✦ NFT':'')+'</span><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐ · '+(g.gift_type==='collectible'?Math.max(0,Number(g.total_supply)-Number(g.issued_count))+' из '+Number(g.total_supply):'безлимитный тираж')+'</small></div>').join('');
+  const attrSelect=(id,label)=>'<label for="'+id+'">'+label+'</label><select id="'+id+'"><option value="">Загрузка вариантов…</option></select>';
+  modal('Выпуск NFT-коллекции',
+    '<div class="tg-admin-wrap"><div class="tg-admin-tools"><button type="button" id="tgAdminGrantStars">⭐ Выдать звёзды</button><button type="button" id="tgAdminCollectible">✦ Выдать коллекционный юзернейм</button><button type="button" id="tgAdminStats">📊 Просмотреть статистику</button></div><p class="tg-admin-hint">Только владелец выпускает NFT. Каждая выпущенная серия получает зафиксированные модель, узор и фон.</p>'+
+    '<label for="tgGiftDesign">Подарок / коллекция</label><select id="tgGiftDesign">'+options+'</select>'+
+    attrSelect('tgNftModel','Модель')+attrSelect('tgNftPattern','Узор')+attrSelect('tgNftBackground','Фон')+
+    '<label for="tgGiftPrice">Цена NFT в звёздах</label><input id="tgGiftPrice" type="number" min="1" max="1000000000" step="1" value="100" inputmode="numeric">'+
+    '<label for="tgGiftSupply">Тираж этой NFT-серии</label><input id="tgGiftSupply" type="number" min="1" max="1000000" step="1" value="100" inputmode="numeric">'+
+    '<div class="tg-admin-section-title">Активные подарки и NFT</div>'+(current||'<p class="tg-admin-empty">Пока ничего не выпущено.</p>')+'</div>',
     async()=>{
       const name=$('tgGiftDesign').value,price=Number($('tgGiftPrice').value),supply=Number($('tgGiftSupply').value);
+      const attributes={model:$('tgNftModel').value,pattern:$('tgNftPattern').value,background:$('tgNftBackground').value};
+      if(Object.values(attributes).some(v=>!v))return toast('Выбери модель, узор и фон.');
       if(!Number.isSafeInteger(price)||price<1)return toast('Укажи стоимость от 1 звезды.');
       if(!Number.isSafeInteger(supply)||supply<1)return toast('Укажи тираж от 1 экземпляра.');
       $('confirmModal').disabled=true;
-      try{const gift=await tgGiftApi('mint',{gift_name:name,gift_key:library.slug(name),asset_key:library.assetName(name),price_stars:price,total_supply:supply});topgramGiftRows.unshift(gift.gift);close();toast('Подарок выпущен и добавлен в каталог.')}
-      catch(error){toast(error.message);$('confirmModal').disabled=false}
-    },'Выпустить подарок');
+      try{
+        const gift=await tgGiftApi('mint_collectible',{gift_name:name,gift_key:library.slug(name),asset_key:library.assetName(name),price_stars:price,total_supply:supply,attributes});
+        topgramGiftRows.unshift(gift.gift);close();toast('NFT-коллекция выпущена и добавлена в маркет.');
+      }catch(error){toast(error.message);$('confirmModal').disabled=false}
+    },'Выпустить NFT');
   $('confirmModal').disabled=false;
   $('tgAdminGrantStars').onclick=openAdminGrantStars;
   $('tgAdminCollectible').onclick=openAdminCollectible;
   $('tgAdminStats').onclick=openAdminStats;
+  const fill=async()=>{
+    const design=library.collections.find(x=>x===$('tgGiftDesign').value)||library.collections[0];
+    const gift={gift_name:design,asset_key:library.assetName(design)};
+    let attrs;try{attrs=await tgGiftLoadAttributes(gift)}catch(e){attrs=tgGiftUpgradeOptions}
+    const sets=[['tgNftModel',attrs.model],['tgNftPattern',attrs.pattern],['tgNftBackground',attrs.background]];
+    for(const [id,values] of sets){
+      const el=$(id);const list=Array.isArray(values)?values:[];
+      el.innerHTML=list.map(v=>{const name=typeof v==='string'?v:v.name;return '<option value="'+esc(name)+'">'+esc(tgGiftPrettyAttribute(name))+'</option>'}).join('');
+    }
+  };
+  $('tgGiftDesign').onchange=fill;
+  fill();
 }
 function openAdminGrantStars(){
   modal('Выдать звёзды','<div class="tg-admin-form"><label for="tgGrantUsername">Обычный юзернейм пользователя</label><input id="tgGrantUsername" maxlength="25" placeholder="@username" autocapitalize="none"><label for="tgGrantAmount">Количество звёзд</label><input id="tgGrantAmount" type="number" min="1" max="1000000000" step="1" value="500" inputmode="numeric"><p class="tg-admin-hint">Звёзды будут добавлены к текущему балансу выбранного аккаунта.</p></div>',async()=>{
@@ -1016,12 +1034,16 @@ function tgGiftCardArt(gift,attrs={}){
   const library=giftDesignLibrary();
   const asset=gift.asset_key||gift.assetKey||library.assetName(gift.gift_name||'');
   const slug=gift.gift_key||library.slug(gift.gift_name||'');
+  const baseUrl=TG_GIFT_ASSET_CDN+'webp/by_name/'+encodeURIComponent(asset)+'.webp';
+  const isCollectible=gift.gift_type==='collectible'||!!(attrs.model&&attrs.pattern&&attrs.background);
+  if(!isCollectible){
+    return '<div class="tg-gift-art tg-plain-gift-art"><img loading="lazy" alt="'+esc(gift.gift_name||'Подарок TopGram')+'" src="'+baseUrl+'" data-asset="'+esc(asset)+'" data-slug="'+esc(slug)+'"></div>';
+  }
   const model=attrs.model||'';
   const symbol=attrs.pattern||'';
   const backdrop=attrs.background||'';
   const palette=tgGiftBackdropPalette(backdrop);
-  const baseUrl=TG_GIFT_ASSET_CDN+'webp/by_name/'+encodeURIComponent(asset)+'.webp';
-  const validModel=/^[\p{L}\p{N}_-]{1,80}$/u.test(model);
+  const validModel=/^[\\p{L}\\p{N}_-]{1,80}$/u.test(model);
   const modelUrl=validModel?TG_GIFT_ASSET_CDN+'models/'+encodeURIComponent(asset)+'/'+encodeURIComponent(model)+'.webp':baseUrl;
   const glyph=tgGiftSymbolGlyph(symbol);
   const tiles=Array.from({length:9},()=>'<span>'+esc(glyph)+'</span>').join('');
@@ -1038,9 +1060,9 @@ function tgRandomGiftValue(key,current){
 }
 async function openGiftMarket(){
   let data;try{data=await tgGiftApi('list')}catch(e){return toast(e.message)}
-  const gifts=(data.gifts||[]).filter(g=>Number(g.total_supply)>Number(g.issued_count));
-  const cards=gifts.map(g=>'<button type="button" class="gift-item tg-market-gift" data-gift-id="'+esc(g.id)+'">'+tgGiftCardArt(g)+'<b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐</small></button>').join('');
-  modal('Маркет подарков','<div class="gift-picker-head"><div><strong>Подарки TopGram</strong><small>Ограниченные коллекции</small></div></div><div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div><div class="gift-section-title">Доступно к покупке · '+gifts.length+'</div><div class="gift-catalog tg-market-catalog">'+(cards||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong><p>Новые подарки появятся после выпуска владельцем TopGram.</p></div>')+'</div>',async()=>{
+  const gifts=(data.gifts||[]).filter(g=>g.gift_type!=='collectible'||Number(g.total_supply)>Number(g.issued_count));
+  const cards=gifts.map(g=>'<button type="button" class="gift-item tg-market-gift" data-gift-id="'+esc(g.id)+'">'+tgGiftCardArt(g,g.collectible_attributes||{})+'<b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐</small>'+(g.gift_type==='collectible'?'<small class="tg-nft-label">✦ NFT · '+Math.max(0,Number(g.total_supply)-Number(g.issued_count))+' шт.</small>':'')+'</button>').join('');
+  modal('Маркет подарков','<div class="gift-picker-head"><div><strong>Подарки TopGram</strong><small>Обычные подарки и NFT-коллекции</small></div></div><div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div><div class="gift-section-title">Доступно к покупке · '+gifts.length+'</div><div class="gift-catalog tg-market-catalog">'+(cards||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong><p>Новые подарки появятся после выпуска владельцем TopGram.</p></div>')+'</div>',async()=>{
     const selected=$('modalBody').querySelector('.tg-market-gift.selected');if(!selected)return toast('Выбери подарок.');
     const gift=gifts.find(g=>g.id===selected.dataset.giftId);if(!gift)return;
     $('confirmModal').disabled=true;
@@ -1054,41 +1076,22 @@ async function openGiftMarket(){
 async function openGiftInventory(){
   let data;try{data=await tgGiftRefreshWallet()}catch(e){return toast(e.message)}
   const items=data.inventory||[];
-  const rows=items.map(item=>{const g=item.gift||{},attrs=item.attributes||{};return '<div class="tg-inventory-card">'+tgGiftCardArt(g,attrs)+'<div class="tg-inventory-info"><b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>Модель: '+esc(tgGiftPrettyAttribute(attrs.model||'—'))+'</small><small>Символ: '+esc(tgGiftPrettyAttribute(attrs.pattern||'—'))+'</small><small>Фон: '+esc(tgGiftPrettyAttribute(attrs.background||'—'))+'</small><button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'" '+(item.upgraded_at?'disabled':'')+'>'+(item.upgraded_at?'✓ Уже улучшен':'✨ Улучшить бесплатно')+'</button></div></div>'}).join('');
+  const rows=items.map(item=>{const g=item.gift||{},attrs=item.attributes||{},nft=g.gift_type==='collectible';return '<div class="tg-inventory-card">'+tgGiftCardArt(g,attrs)+'<div class="tg-inventory-info"><b>'+esc(g.gift_name||'Подарок TopGram')+(nft?' <span class="tg-nft-label">NFT</span>':'')+'</b>'+(nft?'<small>Модель: '+esc(attrs.model||'—')+'</small><small>Узор: '+esc(attrs.pattern||'—')+'</small><small>Фон: '+esc(attrs.background||'—')+'</small>':'<small>Обычный подарок</small>')+'<button type="button" class="tg-transfer-open" data-inventory-id="'+esc(item.id)+'">↗ Передать</button></div></div>'}).join('');
   modal('Подарки','<div class="gift-picker-head"><div><strong>Подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут показаны здесь.</p></div>')+'</div>',close,'Готово');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
-  $('modalBody').querySelectorAll('.tg-upgrade-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftUpgrade(item)});
+  $('modalBody').querySelectorAll('.tg-transfer-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftTransfer(item)});
   wireTopgramGiftImages($('modalBody'));
 }
-async function openGiftUpgrade(item){
-  if(item?.upgraded_at){toast('Этот подарок уже улучшен. Повторное улучшение недоступно.');return}
-  const gift=item.gift||{},attrs=item.attributes||{};
-  let options;
-  try{options=await tgGiftLoadAttributes(gift)}catch(error){options={model:tgGiftUpgradeOptions.model.values,pattern:tgGiftUpgradeOptions.pattern.values,background:tgGiftUpgradeOptions.background.values}}
-  const currentModel=attrs.model||'—',currentSymbol=attrs.pattern||'—',currentBackdrop=attrs.background||'—';
-  const body='<div class="tg-upgrade-screen"><div class="tg-upgrade-stage" id="tgUpgradeStage">'+tgGiftCardArt(gift,attrs)+'</div><div class="tg-upgrade-reels" id="tgUpgradeReels"><div class="tg-upgrade-reel"><small>Модель</small><b id="tgReelModel">'+esc(tgGiftPrettyAttribute(currentModel))+'</b></div><div class="tg-upgrade-reel"><small>Символ</small><b id="tgReelPattern">'+esc(tgGiftPrettyAttribute(currentSymbol))+'</b></div><div class="tg-upgrade-reel"><small>Фон</small><b id="tgReelBackground">'+esc(tgGiftPrettyAttribute(currentBackdrop))+'</b></div></div><h3>'+esc(gift.gift_name||'Подарок')+'</h3><p class="tg-upgrade-subtitle">Модель, символ и фон выбираются одновременно из вариантов этой коллекции</p><div class="tg-current-attributes"><span>Сейчас: '+esc([tgGiftPrettyAttribute(currentModel),tgGiftPrettyAttribute(currentSymbol),tgGiftPrettyAttribute(currentBackdrop)].join(' · '))+'</span></div><div class="tg-upgrade-result" id="tgUpgradeResult">Нажми кнопку, чтобы посмотреть новое оформление</div><p class="tg-upgrade-disclosure">Улучшение бесплатное. Варианты берутся из каталога коллекции, а результат сохранится в инвентаре.</p></div>';
-  modal('Улучшение подарка',body,async()=>{
-    const resultAttributes={model:tgGiftRandomFrom(options.model,attrs.model),pattern:tgGiftRandomFrom(options.pattern,attrs.pattern),background:tgGiftRandomFrom(options.background,attrs.background)};
-    const stage=$('tgUpgradeStage'),reels=$('tgUpgradeReels');
-    $('confirmModal').disabled=true;$('confirmModal').textContent='Оформление меняется…';
-    stage.classList.remove('tg-spinning');reels.classList.remove('tg-spinning');void stage.offsetWidth;stage.classList.add('tg-spinning');reels.classList.add('tg-spinning');
-    const keys=['model','pattern','background'],ids=['tgReelModel','tgReelPattern','tgReelBackground'];
-    const timer=setInterval(()=>{
-      const preview={};
-      keys.forEach((key,i)=>{preview[key]=tgGiftRandomFrom(options[key],null);$(ids[i]).textContent=tgGiftPrettyAttribute(preview[key])});
-      stage.innerHTML=tgGiftCardArt(gift,preview);
-    },180);
-    await new Promise(resolve=>setTimeout(resolve,2700));clearInterval(timer);
-    keys.forEach((key,i)=>$(ids[i]).textContent=tgGiftPrettyAttribute(resultAttributes[key]));
-    stage.innerHTML=tgGiftCardArt(gift,resultAttributes);wireTopgramGiftImages(stage);
-    $('tgUpgradeResult').innerHTML='<strong>✨ Новое оформление</strong><span>Модель: '+esc(tgGiftPrettyAttribute(resultAttributes.model))+'</span><span>Символ: '+esc(tgGiftPrettyAttribute(resultAttributes.pattern))+'</span><span>Фон: '+esc(tgGiftPrettyAttribute(resultAttributes.background))+'</span>';
-    try{await tgGiftApi('upgrade_bundle',{inventory_id:item.id,attributes:resultAttributes});close();toast('Подарок обновлён бесплатно! ✨');if($('profileGiftsArea')?.classList.contains('active'))renderProfileGifts();else openGiftInventory()}
-    catch(error){stage.classList.remove('tg-spinning');reels.classList.remove('tg-spinning');toast(error.message);$('confirmModal').disabled=false;$('confirmModal').textContent='Обновить бесплатно'}
-  },'Обновить бесплатно');
-  $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');$('confirmModal').disabled=false;$('confirmModal').textContent='Обновить бесплатно';wireTopgramGiftImages($('modalBody'));
+function openGiftTransfer(item){
+  modal('Передать подарок','<div class="tg-admin-form"><label for="tgGiftRecipient">Юзернейм получателя</label><input id="tgGiftRecipient" maxlength="25" placeholder="@username" autocapitalize="none"><p class="tg-admin-hint">Подарок перейдёт в инвентарь выбранного пользователя.</p></div>',async()=>{
+    const username=$('tgGiftRecipient').value.trim().replace(/^@/,'').toLowerCase();
+    if(!/^[a-z0-9_]{5,24}$/.test(username))return toast('Проверь юзернейм получателя.');
+    $('confirmModal').disabled=true;
+    try{await tgGiftApi('transfer',{inventory_id:item.id,username});close();toast('Подарок передан пользователю @'+username);openGiftInventory()}
+    catch(e){toast(e.message);$('confirmModal').disabled=false}
+  },'Передать');
 }
-
-$('settingGift').querySelector('strong').textContent='Маркет подарков';
+function openGiftUpgrade(){toast('Обычные подарки нельзя улучшать. NFT выпускает только владелец TopGram.');}\n\n$('settingGift').querySelector('strong').textContent='Маркет подарков';
 $('settingGift').onclick=e=>{e.preventDefault();e.stopPropagation();openGiftMarket();};
 if(tgAuthSavedSession())loadTopgramGiftAdmin();
 
@@ -1108,7 +1111,7 @@ $('starsPageBack').onclick=()=>{$('starsPage').classList.remove('open')};
 $('starsTopUpInfo').onclick=()=>toast('Пополнение звёзд пока не подключено');
 ['Premium','Business'].forEach(k=>{const el=$('setting'+k);if(el)el.onclick=()=>modal(el.querySelector('strong').textContent,'<p>Этот раздел пока не подключён в демоверсии TopGram.</p>',close,'Понятно')});
 ['Ask','Faq','Features','Policy'].forEach(k=>{const el=$('setting'+k);if(el)el.onclick=()=>modal(el.querySelector('strong').textContent,'<p>Раздел справки TopGram будет добавлен позже.</p>',close,'Понятно')});
-async function renderProfileGifts(){
+async async function renderProfileGifts(){
   const area=$('profileGiftsArea');if(!area)return;
   area.classList.add('active');$('postsArea').style.display='none';$('addPost').style.display='none';
   area.innerHTML='<div class="profile-gifts-empty">Загружаем подарки…</div>';
@@ -1116,10 +1119,10 @@ async function renderProfileGifts(){
     const data=await tgGiftRefreshWallet(),items=data.inventory||[];
     if(!items.length){area.innerHTML='<div class="profile-gifts-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут отображаться здесь.</p></div>';return}
     area.innerHTML='<div class="profile-gifts-grid">'+items.map(item=>{
-      const g=item.gift||{},a=item.attributes||{};
-      return '<div class="profile-gift-card">'+tgGiftCardArt(g,a)+'<b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>'+esc(a.model||'Классическая')+'</small><small>'+esc(a.pattern||'Без узора')+'</small><small>'+esc(a.background||'Стандартный')+'</small><button type="button" class="profile-gift-upgrade" data-id="'+esc(item.id)+'" '+(item.upgraded_at?'disabled':'')+'>'+(item.upgraded_at?'✓ Уже улучшен':'✨ Улучшить бесплатно')+'</button></div>';
+      const g=item.gift||{},a=item.attributes||{},nft=g.gift_type==='collectible';
+      return '<div class="profile-gift-card">'+tgGiftCardArt(g,a)+'<b>'+esc(g.gift_name||'Подарок TopGram')+(nft?' ✦ NFT':'')+'</b>'+(nft?'<small>Модель: '+esc(a.model||'—')+'</small><small>Узор: '+esc(a.pattern||'—')+'</small><small>Фон: '+esc(a.background||'—')+'</small>':'<small>Обычный подарок</small>')+'<button type="button" class="profile-gift-transfer" data-id="'+esc(item.id)+'">↗ Передать</button></div>';
     }).join('')+'</div>';
-    area.querySelectorAll('.profile-gift-upgrade').forEach(btn=>btn.onclick=()=>{const item=items.find(x=>x.id===btn.dataset.id);if(item)openGiftUpgrade(item)});
+    area.querySelectorAll('.profile-gift-transfer').forEach(btn=>btn.onclick=()=>{const item=items.find(x=>x.id===btn.dataset.id);if(item)openGiftTransfer(item)});
     wireTopgramGiftImages(area);
   }catch(error){area.innerHTML='<div class="profile-gifts-empty">Не удалось загрузить подарки. '+esc(error.message)+'</div>'}
 }
