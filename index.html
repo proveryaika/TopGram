@@ -850,6 +850,12 @@ async function tgEnsureGiftZipLibrary(){
   });
   return window.__tgZipLoading;
 }
+function tgPackAssetPaths(gift){
+  const paths=[gift.base_animation];
+  const upgrade=gift.upgrade||{};
+  for(const item of [...(upgrade.models||[]),...(upgrade.patterns||[])])if(item?.animation)paths.push(item.animation);
+  return [...new Set(paths.filter(Boolean).map(String))];
+}
 async function tgInspectGiftPack(file){
   if(!file||file.size<1||file.size>32*1024*1024)throw new Error('ZIP должен быть не больше 32 МБ.');
   const JSZip=await tgEnsureGiftZipLibrary();
@@ -859,57 +865,101 @@ async function tgInspectGiftPack(file){
   const manifest=JSON.parse(await manifestFile.async('string'));
   if(!manifest.pack_name||!Array.isArray(manifest.gifts)||!manifest.gifts.length)throw new Error('В pack.json нужны pack_name и непустой массив gifts.');
   if(manifest.gifts.length>100)throw new Error('В одном наборе допускается не более 100 подарков.');
-  const paths=new Set();
-  const gifts=[];
+  const titles=new Set(),slugs=new Set(),gifts=[];
   for(const gift of manifest.gifts){
-    if(!gift||!String(gift.title||'').trim()||!Number.isSafeInteger(Number(gift.stars))||Number(gift.stars)<0||!gift.base_animation)throw new Error('У каждого подарка должны быть title, stars и base_animation.');
-    const path=String(gift.base_animation);
-    if(path.startsWith('/')||path.split('/').includes('..'))throw new Error('Недопустимый путь анимации: '+path);
-    const asset=zip.file(path);
-    if(!asset)throw new Error('Не найден файл анимации: '+path);
-    if(paths.has(path))throw new Error('Повторяющийся путь анимации: '+path);
-    paths.add(path);
-    const size=await asset.async('uint8array').then(x=>x.byteLength);
-    if(size>8*1024*1024)throw new Error('Файл анимации больше 8 МБ: '+path);
-    gifts.push({title:String(gift.title),stars:Number(gift.stars),animation:path,size});
+    const title=String(gift?.title||'').trim();
+    if(!title||!Number.isSafeInteger(Number(gift.stars))||Number(gift.stars)<1||!gift.base_animation)throw new Error('У каждого подарка должны быть title, stars от 1 и base_animation.');
+    const slug=String(gift.id_slug||title.toLowerCase().replace(/[^a-z0-9]+/g,'-')).toLowerCase();
+    if(titles.has(title.toLowerCase())||slugs.has(slug))throw new Error('В наборе повторяются названия или ID подарков.');
+    titles.add(title.toLowerCase());slugs.add(slug);
+    const paths=tgPackAssetPaths(gift);
+    for(const path of paths){
+      if(path.startsWith('/')||path.split('/').includes('..'))throw new Error('Недопустимый путь анимации: '+path);
+      const asset=zip.file(path);
+      if(!asset)throw new Error('Не найден файл анимации: '+path);
+      const size=await asset.async('uint8array').then(x=>x.byteLength);
+      if(size>8*1024*1024)throw new Error('Файл анимации больше 8 МБ: '+path);
+    }
+    gifts.push({title,stars:Number(gift.stars),animation:gift.base_animation});
   }
   return {zip,manifest,gifts};
 }
+async function tgImportGiftPack(pack){
+  if(!pack?.id)return toast('Не удалось определить набор.');
+  const archivePath=pack.archive_path||pack.manifest?.archive_path;
+  if(!archivePath)return toast('У набора нет ZIP-архива. Загрузи его заново.');
+  const session=tgAuthSavedSession();
+  const archiveUrl=TG_SUPABASE_URL+'/storage/v1/object/public/topgram-gift-assets/'+archivePath.split('/').map(encodeURIComponent).join('/');
+  const response=await fetch(archiveUrl);
+  if(!response.ok)throw new Error('Не удалось скачать архив с полки.');
+  const JSZip=await tgEnsureGiftZipLibrary();
+  const zip=await JSZip.loadAsync(await response.blob(),{checkCRC32:true});
+  const mf=zip.file('pack.json');
+  if(!mf)throw new Error('В ZIP не найден pack.json.');
+  const manifest=JSON.parse(await mf.async('string'));
+  if(!Array.isArray(manifest.gifts)||!manifest.gifts.length)throw new Error('В pack.json нет подарков.');
+  const uploaded=new Map(),results=[];
+  for(let i=0;i<manifest.gifts.length;i++){
+    const gift=manifest.gifts[i];
+    const pathMap={};
+    for(const sourcePath of tgPackAssetPaths(gift)){
+      if(!uploaded.has(sourcePath)){
+        const entry=zip.file(sourcePath);
+        if(!entry)throw new Error('В архиве отсутствует файл '+sourcePath);
+        const blob=await entry.async('blob');
+        const destination='pack-assets/'+pack.id+'/'+sourcePath.split('/').map(encodeURIComponent).join('/');
+        const put=await fetch(TG_SUPABASE_URL+'/storage/v1/object/topgram-gift-assets/'+destination,{
+          method:'POST',headers:{'apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':sourcePath.endsWith('.tgs')?'application/gzip':'application/json','x-upsert':'true'},body:blob
+        });
+        const data=await put.json().catch(()=>({}));
+        if(!put.ok)throw new Error(data.message||data.error||('Не удалось сохранить ресурс '+sourcePath));
+        uploaded.set(sourcePath,destination);
+      }
+      pathMap[sourcePath]=uploaded.get(sourcePath);
+    }
+    const imported=JSON.parse(JSON.stringify(gift));
+    const upgrade=imported.upgrade||{};
+    for(const item of [...(upgrade.models||[]),...(upgrade.patterns||[])])if(item.animation)item.animation=pathMap[item.animation];
+    const result=await tgGiftApi('import_pack_gift',{pack_id:pack.id,gift_manifest:imported,base_animation_path:pathMap[gift.base_animation]});
+    results.push(result.result);
+  }
+  await loadTopgramGiftAdmin();
+  const added=results.filter(x=>!x.skipped).length,skipped=results.length-added;
+  toast('Импорт TopGram завершён: добавлено '+added+', уже было в каталоге '+skipped+'.');
+}
+async function tgLoadGiftPackShelf(){
+  const root=$('tgPackShelf');if(!root)return;
+  root.textContent='Загружаем наборы…';
+  try{
+    const data=await tgGiftApi('list_packs'),packs=data.packs||[];
+    if(!packs.length){root.innerHTML='<p class="tg-admin-hint">Полка пуста. Загрузи первый ZIP-набор выше.</p>';return}
+    root.innerHTML=packs.map(p=>'<div class="tg-admin-existing"><span><b>'+esc(p.pack_name)+'</b><small>'+esc(p.pack_key)+' · '+esc(p.status||'draft')+'</small></span><span><button type="button" data-import-pack="'+esc(p.id)+'">Импортировать</button> <button type="button" data-delete-pack="'+esc(p.id)+'">Удалить</button></span></div>').join('');
+    root.querySelectorAll('[data-import-pack]').forEach(btn=>btn.onclick=async()=>{
+      btn.disabled=true;
+      try{const pack=packs.find(p=>p.id===btn.dataset.importPack);await tgImportGiftPack(pack);await tgLoadGiftPackShelf()}
+      catch(error){toast(error.message);btn.disabled=false}
+    });
+    root.querySelectorAll('[data-delete-pack]').forEach(btn=>btn.onclick=async()=>{
+      if(!confirm('Удалить архив набора с полки? Уже импортированные подарки останутся в каталоге.'))return;
+      btn.disabled=true;
+      try{await tgGiftApi('delete_pack',{pack_id:btn.dataset.deletePack});toast('Архив удалён с полки.');await tgLoadGiftPackShelf()}
+      catch(error){toast(error.message);btn.disabled=false}
+    });
+  }catch(error){root.textContent='Не удалось загрузить полку: '+error.message}
+}
 function openGiftPacksAdmin(){
-  if(!topgramGiftAdmin)return toast('Доступ только владельцу TopGram.');
-  modal('Наборы подарков · импорт ZIP',
-    '<div class="tg-admin-form"><p class="tg-admin-hint">Загрузи ZIP с pack.json и анимациями Lottie/TGS. TopGram проверит манифест и файлы, сохранит архив на полку черновиков. Публикация подарков в каталоге выполняется отдельно.</p>'+
+  if(!topgramGiftAdmin)return toast('Доступ только администратору TopGram.');
+  modal('TopGram · наборы подарков',
+    '<div class="tg-admin-form"><p class="tg-admin-hint">Загрузи ZIP с pack.json и Lottie/TGS. После проверки архив появится на полке. Из полки можно импортировать подарки в каталог; повторный импорт не создаёт дубликаты.</p>'+
     '<label for="tgPackFile">ZIP-архив набора</label><input id="tgPackFile" type="file" accept=".zip,application/zip">'+
     '<div id="tgPackInspection" class="tg-admin-hint">Архив не выбран.</div>'+
     '<label for="tgPackKey">ID набора</label><input id="tgPackKey" maxlength="48" placeholder="summer_2026" autocapitalize="none">'+
     '<label for="tgPackName">Название набора</label><input id="tgPackName" maxlength="80" placeholder="Летняя коллекция">'+
-    '<label for="tgPackDescription">Описание</label><textarea id="tgPackDescription" maxlength="500" rows="3" placeholder="Описание набора"></textarea></div>',
-    async()=>{
-      const file=$('tgPackFile').files?.[0],key=$('tgPackKey').value.trim().toLowerCase(),name=$('tgPackName').value.trim(),description=$('tgPackDescription').value.trim();
-      if(!file)return toast('Выбери ZIP-архив.');
-      if(!/^[a-z0-9][a-z0-9_-]{1,47}$/.test(key))return toast('ID: 2–48 символов, латиница, цифры, _ и -.');
-      if(!name)return toast('Укажи название набора.');
-      $('confirmModal').disabled=true;
-      try{
-        const inspected=await tgInspectGiftPack(file);
-        const session=tgAuthSavedSession();
-        const path='packs/'+tgCurrentUserId()+'/'+crypto.randomUUID()+'-'+key+'.zip';
-        const upload=await fetch(TG_SUPABASE_URL+'/storage/v1/object/topgram-gift-assets/'+path.split('/').map(encodeURIComponent).join('/'),{
-          method:'POST',
-          headers:{'apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/zip','x-upsert':'false'},
-          body:file
-        });
-        const uploaded=await upload.json().catch(()=>({}));
-        if(!upload.ok)throw new Error(uploaded.message||uploaded.error||'Не удалось загрузить ZIP в хранилище.');
-        const saved=await tgGiftRpc('topgram_admin_save_gift_pack',{
-          p_admin_id:tgCurrentUserId(),p_pack_key:key,p_pack_name:name||inspected.manifest.pack_name,
-          p_description:description||String(inspected.manifest.description||''),
-          p_manifest:{format:'owpengram-pack-v1',assets_bucket:'topgram-gift-assets',archive_path:path,archive_size_bytes:file.size,pack_manifest:inspected.manifest,validated_gifts:inspected.gifts}
-        });
-        close();toast('ZIP набора «'+(saved.pack_name||name)+'» загружен и сохранён на полке. Подарков в архиве: '+inspected.gifts.length+'.');
-      }catch(error){toast(error.message);$('confirmModal').disabled=false}
-    },'Проверить и загрузить ZIP');
-  $('confirmModal').disabled=false;
+    '<label for="tgPackDescription">Описание</label><textarea id="tgPackDescription" maxlength="500" rows="3" placeholder="Описание набора"></textarea>'+
+    '<button type="button" id="tgPackUpload">Проверить и загрузить ZIP</button>'+
+    '<div class="tg-admin-section-title">Полка наборов</div><div id="tgPackShelf" class="tg-admin-shelf">Загружаем…</div></div>',
+    null,'Закрыть');
+  $('confirmModal').style.display='none';
   $('tgPackFile').onchange=async()=>{
     const file=$('tgPackFile').files?.[0],status=$('tgPackInspection');
     if(!file){status.textContent='Архив не выбран.';return}
@@ -922,6 +972,31 @@ function openGiftPacksAdmin(){
       status.textContent='Проверка пройдена: '+result.gifts.length+' подарков · '+(file.size/1024/1024).toFixed(2)+' МБ. '+result.gifts.map(g=>g.title+' ('+g.stars+' ⭐)').join(' · ');
     }catch(error){status.textContent='Ошибка проверки: '+error.message}
   };
+  $('tgPackUpload').onclick=async()=>{
+    const file=$('tgPackFile').files?.[0],key=$('tgPackKey').value.trim().toLowerCase(),name=$('tgPackName').value.trim(),description=$('tgPackDescription').value.trim();
+    if(!file)return toast('Выбери ZIP-архив.');
+    if(!/^[a-z0-9][a-z0-9_-]{1,47}$/.test(key))return toast('ID: 2–48 символов, латиница, цифры, _ и -.');
+    if(!name)return toast('Укажи название набора.');
+    const btn=$('tgPackUpload');btn.disabled=true;
+    try{
+      const inspected=await tgInspectGiftPack(file),session=tgAuthSavedSession();
+      const path='packs/'+tgCurrentUserId()+'/'+crypto.randomUUID()+'-'+key+'.zip';
+      const upload=await fetch(TG_SUPABASE_URL+'/storage/v1/object/topgram-gift-assets/'+path.split('/').map(encodeURIComponent).join('/'),{
+        method:'POST',headers:{'apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/zip','x-upsert':'false'},body:file
+      });
+      const uploaded=await upload.json().catch(()=>({}));
+      if(!upload.ok)throw new Error(uploaded.message||uploaded.error||'Не удалось загрузить ZIP в хранилище.');
+      const saved=await tgGiftRpc('topgram_admin_save_gift_pack',{
+        p_admin_id:tgCurrentUserId(),p_pack_key:key,p_pack_name:name,p_description:description||String(inspected.manifest.description||''),
+        p_manifest:{format:'owpengram-pack-v1',assets_bucket:'topgram-gift-assets',archive_path:path,archive_size_bytes:file.size,pack_manifest:inspected.manifest,validated_gifts:inspected.gifts}
+      });
+      toast('Архив «'+(saved.pack_name||name)+'» сохранён. Подарков: '+inspected.gifts.length+'.');
+      $('tgPackFile').value='';$('tgPackInspection').textContent='ZIP загружен на полку.';
+      await tgLoadGiftPackShelf();
+    }catch(error){toast(error.message)}
+    finally{btn.disabled=false}
+  };
+  tgLoadGiftPackShelf();
 }
 
 async function tgGiftApi(action,payload={}){
