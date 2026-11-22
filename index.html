@@ -825,6 +825,7 @@ function giftDesignLibrary(){
 }
 let topgramGiftAdmin=false;
 let topgramGiftRows=[];
+function tgCurrentUserId(){try{return JSON.parse(atob(tgAuthSavedSession().access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub||''}catch{return profileData.id||''}}
 async function tgGiftRpc(name,args){
   const session=tgAuthSavedSession();
   if(!session?.access_token)throw new Error('Сначала войди в аккаунт TopGram.');
@@ -845,7 +846,7 @@ function openGiftPacksAdmin(){
     if(!name)return toast('Укажи название набора.');
     $('confirmModal').disabled=true;
     try{
-      const pack=await tgGiftRpc('topgram_admin_save_gift_pack',{p_admin_id:tgAuthSavedSession().user?.id||profileData.id,p_pack_key:key,p_pack_name:name,p_description:description,p_manifest:{format:'topgram-gift-pack-v1',assets_bucket:'topgram-gift-assets'}});
+      const pack=await tgGiftRpc('topgram_admin_save_gift_pack',{p_admin_id:tgCurrentUserId(),p_pack_key:key,p_pack_name:name,p_description:description,p_manifest:{format:'topgram-gift-pack-v1',assets_bucket:'topgram-gift-assets'}});
       close();toast('Черновик набора «'+(pack.pack_name||name)+'» сохранён.');
     }catch(error){toast(error.message);$('confirmModal').disabled=false}
   },'Сохранить набор');
