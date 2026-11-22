@@ -463,6 +463,7 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 
 .tg-market-balance{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;margin:0 0 18px;border-radius:13px;background:#202f40;color:#aab8c5}.tg-market-balance b{color:#f4d36e;font-size:16px}
 .tg-inventory-list{display:flex;flex-direction:column;gap:12px}
+.tg-send-gift-form{display:grid;gap:9px;margin-top:18px;padding:14px;border-radius:16px;background:var(--card-bg,#202b38)}.tg-send-gift-form label{font-size:13px;font-weight:650}.tg-send-gift-form input,.tg-send-gift-form textarea{width:100%;box-sizing:border-box;border:1px solid var(--border-color,#344252);border-radius:10px;padding:11px;background:var(--bg-color,#17212b);color:inherit;font:inherit}.tg-send-gift-form .tg-gift-option{display:flex;align-items:center;gap:9px}.tg-send-gift-form .tg-gift-option input{width:auto}
 .tg-upgrade-open,.profile-gift-upgrade{display:block;margin:7px 0 0;border:0;border-radius:10px;padding:9px 12px;background:#4b3b72;color:#fff;font-weight:700;width:100%}.tg-upgrade-confirm{text-align:center;padding:8px}.tg-upgrade-confirm .tg-gift-art{margin:0 auto 10px;max-width:150px}.tg-upgrade-enabled-label{display:flex;align-items:center;gap:10px;margin:12px 0}.tg-upgrade-enabled-label input{width:18px;height:18px}
 .tg-plain-gift-art{background:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;overflow:visible!important}.tg-plain-gift-art img{width:100%;height:100%;object-fit:contain;display:block;background:transparent!important}.tg-nft-label{display:inline-block;color:#d9b7ff;font-weight:700}.tg-transfer-open,.profile-gift-transfer{align-self:flex-start;margin-top:6px;border:0;border-radius:9px;padding:8px 14px;background:#344b63;color:#fff;font-weight:650}\n.tg-inventory-card{display:flex;gap:13px;padding:12px;border:1px solid #34485a;border-radius:16px;background:#202f40}
 .tg-inventory-card .tg-gift-art{width:100px;height:100px;flex:none}
@@ -1067,17 +1068,53 @@ function tgRandomGiftValue(key,current){
 }
 async function openGiftMarket(){
   let data;try{data=await tgGiftApi('list')}catch(e){return toast(e.message)}
-  const gifts=(data.gifts||[]).filter(g=>g.gift_type!=='collectible');
+  const gifts=(data.gifts||[]).filter(g=>g.gift_type==='regular');
   const cards=gifts.map(g=>'<button type="button" class="gift-item tg-market-gift" data-gift-id="'+esc(g.id)+'">'+tgGiftCardArt(g,{})+'<b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐</small></button>').join('');
-  modal('Маркет подарков','<div class="gift-picker-head"><div><strong>Подарки TopGram</strong><small>Сначала покупай обычные подарки, затем улучшай их до NFT</small></div></div><div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div><div class="gift-section-title">Обычные подарки · '+gifts.length+'</div><div class="gift-catalog tg-market-catalog">'+(cards||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong></div>')+'</div>',async()=>{
-    const selected=$('modalBody').querySelector('.tg-market-gift.selected');if(!selected)return toast('Выбери подарок.');
-    const gift=gifts.find(g=>g.id===selected.dataset.giftId);if(!gift)return;
-    $('confirmModal').disabled=true;
-    try{await tgGiftApi('buy',{gift_id:gift.id});const wallet=await tgGiftRefreshWallet();close();toast('Обычный подарок добавлен в инвентарь. Остаток: '+wallet.stars.toLocaleString('ru-RU')+' ⭐');openGiftInventory()}
-    catch(e){toast(e.message);$('confirmModal').disabled=false}
-  },'Купить за звёзды');
+  modal('Подарки',
+    '<div class="gift-picker-head"><div><strong>Подарки</strong><small>Выбери подарок, чтобы отправить его пользователю</small></div></div>'+
+    '<div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div>'+
+    '<div class="gift-catalog tg-market-catalog">'+(cards||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong></div>')+'</div>'+
+    '<div class="tg-send-gift-form"><label for="tgGiftRecipient">Получатель · @username</label><input id="tgGiftRecipient" maxlength="25" placeholder="Оставь пустым, чтобы оставить себе" autocapitalize="none">'+
+    '<label for="tgGiftMessage">Сообщение к подарку</label><textarea id="tgGiftMessage" maxlength="255" rows="2" placeholder="Напиши пожелание (необязательно)"></textarea>'+
+    '<label class="tg-gift-option"><input id="tgGiftHideName" type="checkbox"> Скрыть моё имя от других</label>'+
+    '<label class="tg-gift-option" id="tgGiftPrepaidWrap" hidden><input id="tgGiftPrepaid" type="checkbox"> Сразу оплатить улучшение до NFT</label></div>',
+    async()=>{
+      const selected=$('modalBody').querySelector('.tg-market-gift.selected');if(!selected)return toast('Сначала выбери подарок.');
+      const gift=gifts.find(g=>g.id===selected.dataset.giftId);if(!gift)return;
+      const recipient=$('tgGiftRecipient').value.trim().replace(/^@/,'');
+      const message=$('tgGiftMessage').value.trim();
+      const prepaid=$('tgGiftPrepaid').checked;
+      const hideName=$('tgGiftHideName').checked;
+      const total=Number(gift.price_stars)+(prepaid?Number(gift.upgrade_price_stars||0):0);
+      if(recipient&&!/^[a-z0-9_]{5,24}$/i.test(recipient))return toast('Проверь юзернейм получателя.');
+      if(message.length>255)return toast('Сообщение слишком длинное.');
+      if(topgramStars<total)return toast('Недостаточно Stars.');
+      $('confirmModal').disabled=true;
+      try{
+        const result=await tgGiftApi('buy',{gift_id:gift.id,recipient_username:recipient,message,hide_name:hideName,prepaid_upgrade:prepaid});
+        const wallet=await tgGiftRefreshWallet();close();
+        toast((recipient?'Подарок отправлен пользователю @'+recipient:'Подарок добавлен в твой профиль')+'. Остаток: '+wallet.stars.toLocaleString('ru-RU')+' ⭐');
+        if(!recipient)openGiftInventory();
+      }catch(e){toast(e.message);$('confirmModal').disabled=false}
+    },'Отправить подарок');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
-  $('modalBody').querySelectorAll('.tg-market-gift').forEach(b=>b.onclick=()=>{$('modalBody').querySelectorAll('.tg-market-gift').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');const g=gifts.find(x=>x.id===b.dataset.giftId);$('confirmModal').textContent='Купить за '+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐';$('confirmModal').disabled=false});
+  const updateSelected=()=>{
+    const selected=$('modalBody').querySelector('.tg-market-gift.selected');
+    const gift=selected?gifts.find(g=>g.id===selected.dataset.giftId):null;
+    const wrap=$('tgGiftPrepaidWrap');
+    if(wrap){wrap.hidden=!(gift&&gift.upgrade_enabled&&Number(gift.upgrade_issued_count)+Number(gift.upgrade_reserved_count||0)<Number(gift.upgrade_total_supply));}
+    $('confirmModal').disabled=!gift;
+    $('confirmModal').textContent=gift?'Отправить за '+Number(gift.price_stars).toLocaleString('ru-RU')+' ⭐':'Отправить подарок';
+  };
+  $('modalBody').querySelectorAll('.tg-market-gift').forEach(b=>b.onclick=()=>{
+    $('modalBody').querySelectorAll('.tg-market-gift').forEach(x=>x.classList.remove('selected'));
+    b.classList.add('selected');updateSelected();
+  });
+  $('tgGiftPrepaid').onchange=()=>{
+    const selected=$('modalBody').querySelector('.tg-market-gift.selected');
+    const gift=selected?gifts.find(g=>g.id===selected.dataset.giftId):null;
+    if(gift)$('confirmModal').textContent='Отправить за '+(Number(gift.price_stars)+($('tgGiftPrepaid').checked?Number(gift.upgrade_price_stars||0):0)).toLocaleString('ru-RU')+' ⭐';
+  };
   $('confirmModal').disabled=true;wireTopgramGiftImages($('modalBody'));
 }
 async function openGiftInventory(){
@@ -1085,16 +1122,24 @@ async function openGiftInventory(){
   const items=data.inventory||[];
   const rows=items.map(item=>{
     const g=item.gift||{},attrs=item.attributes||{},nft=!!item.upgraded_at;
-    const canUpgrade=!nft&&g.upgrade_enabled&&Number(g.upgrade_issued_count)<Number(g.upgrade_total_supply);
+    const canUpgrade=!nft&&g.upgrade_enabled&&(item.upgrade_prepaid||Number(g.upgrade_issued_count)+Number(g.upgrade_reserved_count||0)<Number(g.upgrade_total_supply));
     return '<div class="tg-inventory-card">'+tgGiftCardArt(g,attrs)+'<div class="tg-inventory-info"><b>'+esc(g.gift_name||'Подарок TopGram')+(nft?' <span class="tg-nft-label">NFT</span>':'')+'</b>'+
       (nft?'<small>№ '+Number(item.serial_number||0)+'</small><small>Модель: '+esc(attrs.model||'—')+'</small><small>Узор: '+esc(attrs.pattern||'—')+'</small><small>Фон: '+esc(attrs.background||'—')+'</small>':'<small>Обычный подарок</small>')+
-      (canUpgrade?'<button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'">✦ Улучшить · '+Number(g.upgrade_price_stars).toLocaleString('ru-RU')+' ⭐</button>':'')+
-      '<button type="button" class="tg-transfer-open" data-inventory-id="'+esc(item.id)+'">↗ Передать</button></div></div>';
+      (item.name_hidden?'<small>Отправитель скрыт</small>':(item.sender_id?'<small>Отправлен пользователем</small>':'<small>Твой подарок</small>'))+
+      (item.gift_message?'<small>«'+esc(item.gift_message)+'»</small>':'')+
+      (item.upgrade_prepaid?'<small>✦ Улучшение уже оплачено</small>':'')+
+      (canUpgrade?'<button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'">✦ Улучшить'+(item.upgrade_prepaid?' бесплатно':' · '+Number(g.upgrade_price_stars).toLocaleString('ru-RU')+' ⭐')+'</button>':'')+
+      (nft?'<button type="button" class="tg-transfer-open" data-inventory-id="'+esc(item.id)+'">↗ Передать</button>':'')+
+      '<button type="button" class="tg-save-open" data-inventory-id="'+esc(item.id)+'" data-saved="'+(item.is_saved?'1':'0')+'">'+(item.is_saved?'Скрыть из профиля':'Показать в профиле')+'</button></div></div>';
   }).join('');
-  modal('Подарки','<div class="gift-picker-head"><div><strong>Подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут показаны здесь.</p></div>')+'</div>',close,'Готово');
+  modal('Мои подарки','<div class="gift-picker-head"><div><strong>Мои подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong></div>')+'</div>',close,'Готово');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
   $('modalBody').querySelectorAll('.tg-transfer-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftTransfer(item)});
   $('modalBody').querySelectorAll('.tg-upgrade-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftUpgrade(item)});
+  $('modalBody').querySelectorAll('.tg-save-open').forEach(b=>b.onclick=async()=>{
+    try{await tgGiftApi('toggle_save',{inventory_id:b.dataset.inventoryId,is_saved:b.dataset.saved!=='1'});await tgGiftRefreshWallet();openGiftInventory()}
+    catch(e){toast(e.message)}
+  });
   wireTopgramGiftImages($('modalBody'));
 }
 function openGiftTransfer(item){
