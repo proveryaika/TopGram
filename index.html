@@ -826,18 +826,7 @@ function giftDesignLibrary(){
 let topgramGiftAdmin=false;
 let topgramGiftRows=[];
 function tgCurrentUserId(){try{const part=tgAuthSavedSession()?.access_token?.split('.')[1];if(!part)return '';const normalized=part.replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(atob(normalized.padEnd(Math.ceil(normalized.length/4)*4,'='))).sub||''}catch{return ''}}
-async function tgGiftRpc(name,args){
-  const session=tgAuthSavedSession();
-  if(!session?.access_token)throw new Error('Сначала войди в аккаунт TopGram.');
-  const response=await fetch(TG_SUPABASE_URL+'/rest/v1/rpc/'+name,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token},
-    body:JSON.stringify(args)
-  });
-  const data=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(data.message||data.error||'Не удалось выполнить действие.');
-  return data;
-}
+
 async function tgEnsureGiftZipLibrary(){
   if(window.JSZip)return window.JSZip;
   if(window.__tgZipLoading)return window.__tgZipLoading;
@@ -1060,11 +1049,8 @@ function openGiftPacksAdmin(){
       });
       const uploaded=await upload.json().catch(()=>({}));
       if(!upload.ok)throw new Error(uploaded.message||uploaded.error||'Не удалось загрузить ZIP в хранилище.');
-      const saved=await tgGiftRpc('topgram_admin_save_gift_pack',{
-        p_admin_id:tgCurrentUserId(),p_pack_key:key,p_pack_name:name,p_description:description||String(inspected.manifest.description||''),
-        p_manifest:{format:'topgram-gift-pack-v1',assets_bucket:'topgram-gift-assets',archive_path:path,archive_size_bytes:file.size,pack_manifest:inspected.manifest,validated_gifts:inspected.gifts}
-      });
-      toast('Архив «'+(saved.pack_name||name)+'» сохранён. Подарков: '+inspected.gifts.length+'.');
+      const saved=await tgGiftApi('save_gift_pack',{pack_key:key,pack_name:name,description:description||String(inspected.manifest.description||''),manifest:{format:'topgram-gift-pack-v1',assets_bucket:'topgram-gift-assets',archive_path:path,archive_size_bytes:file.size,pack_manifest:inspected.manifest,validated_gifts:inspected.gifts}});
+      toast('Архив «'+(saved.pack?.pack_name||name)+'» сохранён. Подарков: '+inspected.gifts.length+'.');
       $('tgPackFile').value='';$('tgPackInspection').textContent='ZIP загружен на полку.';
       await tgLoadGiftPackShelf();
     }catch(error){toast(error.message)}
@@ -1181,9 +1167,9 @@ function openGiftAdmin(){
       gift._upgradeAttributes=attributes;
       $('confirmModal').disabled=true;
       try{
-        await tgGiftRpc('topgram_admin_update_gift_catalog',{p_admin_id:tgCurrentUserId(),p_gift_id:gift.id,p_gift_name:$('tgGiftName').value.trim(),p_price_stars:basePrice,p_total_supply:baseSupply,p_is_active:$('tgGiftActive').checked});
+        await tgGiftApi('update_gift_catalog',{gift_id:gift.id,gift_name:$('tgGiftName').value.trim(),price_stars:basePrice,total_supply:baseSupply,is_active:$('tgGiftActive').checked});
         if(attributes&&['model','pattern','background'].every(k=>Array.isArray(attributes[k])&&attributes[k].length>=2)){
-          await tgGiftRpc('topgram_admin_publish_gift_version',{p_admin_id:tgCurrentUserId(),p_gift_id:gift.id,p_upgrade_enabled:$('tgUpgradeEnabled').checked,p_upgrade_price_stars:price,p_upgrade_total_supply:supply,p_attributes:attributes});
+          await tgGiftApi('publish_collectible_version',{gift_id:gift.id,upgrade_enabled:$('tgUpgradeEnabled').checked,upgrade_price_stars:price,upgrade_total_supply:supply,attributes});
         }else if($('tgUpgradeEnabled').checked)throw new Error('Не удалось загрузить параметры NFT.');
         await loadTopgramGiftAdmin();close();toast('Каталог TopGram обновлён.');openGiftAdmin();
       }catch(error){toast(error.message);$('confirmModal').disabled=false}
