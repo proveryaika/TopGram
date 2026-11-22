@@ -1562,7 +1562,17 @@ function ensureGiftAdminButton(){
   button.type='button';button.className='settings-row';button.id='settingGiftAdmin';
   button.innerHTML='<span class="settings-icon purple">⚙</span><span><strong>Админ-панель</strong><small>Выпуск подарков, цены и тираж</small></span>';
   giftButton.parentElement.insertBefore(button,giftButton);
-  button.onclick=openGiftAdmin;
+  button.onclick=async()=>{
+    button.disabled=true;
+    try{
+      const data=await tgGiftApi('list');
+      if(!data.is_admin){topgramGiftAdmin=false;button.remove();return toast('Доступ к админ-панели разрешён только владельцу +888 8888.');}
+      topgramGiftAdmin=true;
+      topgramGiftRows=Array.isArray(data.gifts)?data.gifts:[];
+      openGiftAdmin();
+    }catch(error){toast('Не удалось проверить права администратора: '+error.message)}
+    finally{if(button.isConnected)button.disabled=false}
+  };
 }
 async function loadTopgramGiftAdmin(){
   try{
