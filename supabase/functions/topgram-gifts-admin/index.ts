@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
     }
     if (action === "inventory") {
       const { data: inventory, error } = await adminDb.from("topgram_gift_inventory")
-        .select("id,attributes,acquired_at,updated_at,gift:topgram_gifts(id,gift_name,asset_key,gift_key,price_stars)")
+        .select("id,attributes,upgraded_at,acquired_at,updated_at,gift:topgram_gifts(id,gift_name,asset_key,gift_key,price_stars)")
         .eq("user_id", userId).order("acquired_at", { ascending: false });
       if (error) throw error;
       const { data: wallet, error: walletError } = await adminDb.from("topgram_wallets")
