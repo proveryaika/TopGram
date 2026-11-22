@@ -496,6 +496,13 @@ body.light .stars-info,body.light .stars-history{background:#e4eaf0;color:#53657
 .profile-gift-card small{display:block;color:#a8b6c4;font-size:11px}
 .profile-gift-card button{margin-top:8px;border:0;border-radius:10px;background:#2aabee;color:white;padding:8px 12px;font-size:12px}
 .profile-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+
+.tg-upgrade-reels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.tg-upgrade-reel{min-width:0;min-height:66px;padding:9px 5px;border-radius:12px;background:#263746;border:1px solid #3a5063;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:6px;overflow:hidden}
+.tg-upgrade-reel small{font-size:10px;color:#9eafbd}
+.tg-upgrade-reel b{font-size:12px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-upgrade-reels.tg-spinning .tg-upgrade-reel b{animation:tgReelSpin .18s linear infinite}
+@keyframes tgReelSpin{0%{transform:translateY(-5px);filter:blur(2px);opacity:.45}50%{transform:translateY(5px);filter:blur(1px);opacity:.8}100%{transform:translateY(-5px);filter:blur(2px);opacity:.45}}
 </style>
 </head>
 <body>
@@ -861,11 +868,11 @@ async function openGiftInventory(){
 function openGiftUpgrade(item){
   const gift=item.gift||{},attrs=item.attributes||{};
   const optionMarkup=key=>tgGiftUpgradeOptions[key].values.map((v,i)=>'<option value="'+esc(v)+'"'+(attrs[key]===v?' selected':'')+'>'+esc(v)+'</option>').join('');
-  const body='<div class="tg-upgrade-screen"><div class="tg-upgrade-stage" id="tgUpgradeStage">'+tgGiftCardArt(gift)+'</div><h3>'+esc(gift.gift_name||'Подарок')+'</h3><p class="tg-upgrade-subtitle">Все три характеристики улучшаются одновременно</p><div class="tg-current-attributes"><span>Сейчас: '+esc(attrs.model||'Классическая')+' · '+esc(attrs.pattern||'Без узора')+' · '+esc(attrs.background||'Стандартный')+'</span></div><label for="tgUpgradeModel">🎁 Модель · 120 ⭐</label><select id="tgUpgradeModel">'+optionMarkup('model')+'</select><label for="tgUpgradePattern">✦ Узор · 60 ⭐</label><select id="tgUpgradePattern">'+optionMarkup('pattern')+'</select><label for="tgUpgradeBackground">🎨 Фон · 90 ⭐</label><select id="tgUpgradeBackground">'+optionMarkup('background')+'</select><div class="tg-upgrade-cost" id="tgUpgradeCost">Стоимость: 270 ⭐</div><p class="tg-upgrade-disclosure">Выбери все три результата заранее. После нажатия они одновременно прокрутятся и применятся. Итог и стоимость видны до подтверждения.</p></div>';
+  const body='<div class="tg-upgrade-screen"><div class="tg-upgrade-stage" id="tgUpgradeStage">'+tgGiftCardArt(gift)+'</div><div class="tg-upgrade-reels" id="tgUpgradeReels"><div class="tg-upgrade-reel"><small>Модель</small><b id="tgReelModel">'+esc(attrs.model||'Золотая')+'</b></div><div class="tg-upgrade-reel"><small>Узор</small><b id="tgReelPattern">'+esc(attrs.pattern||'Звёздный')+'</b></div><div class="tg-upgrade-reel"><small>Фон</small><b id="tgReelBackground">'+esc(attrs.background||'Ночное небо')+'</b></div></div><h3>'+esc(gift.gift_name||'Подарок')+'</h3><p class="tg-upgrade-subtitle">Все три характеристики улучшаются одновременно</p><div class="tg-current-attributes"><span>Сейчас: '+esc(attrs.model||'Классическая')+' · '+esc(attrs.pattern||'Без узора')+' · '+esc(attrs.background||'Стандартный')+'</span></div><label for="tgUpgradeModel">🎁 Модель · 120 ⭐</label><select id="tgUpgradeModel">'+optionMarkup('model')+'</select><label for="tgUpgradePattern">✦ Узор · 60 ⭐</label><select id="tgUpgradePattern">'+optionMarkup('pattern')+'</select><label for="tgUpgradeBackground">🎨 Фон · 90 ⭐</label><select id="tgUpgradeBackground">'+optionMarkup('background')+'</select><div class="tg-upgrade-cost" id="tgUpgradeCost">Стоимость: 270 ⭐</div><p class="tg-upgrade-disclosure">Выбери все три результата заранее. После нажатия они одновременно прокрутятся и применятся. Итог и стоимость видны до подтверждения.</p></div>';
   modal('Улучшение подарка',body,async()=>{
     const attributes={model:$('tgUpgradeModel').value,pattern:$('tgUpgradePattern').value,background:$('tgUpgradeBackground').value};
     const stage=$('tgUpgradeStage');$('confirmModal').disabled=true;$('confirmModal').textContent='Улучшаем…';
-    stage.classList.remove('tg-spinning');void stage.offsetWidth;stage.classList.add('tg-spinning');
+    stage.classList.remove('tg-spinning');$('tgUpgradeReels').classList.remove('tg-spinning');void stage.offsetWidth;stage.classList.add('tg-spinning');$('tgUpgradeReels').classList.add('tg-spinning');
     $('modalBody').querySelectorAll('select').forEach(x=>x.disabled=true);
     await new Promise(resolve=>setTimeout(resolve,1550));
     try{
@@ -875,7 +882,7 @@ function openGiftUpgrade(item){
       close();toast('Подарок улучшен! Списано '+Number(result.upgrade.cost).toLocaleString('ru-RU')+' ⭐');
       if($('profileGiftsArea')?.classList.contains('active'))renderProfileGifts();
       else openGiftInventory();
-    }catch(error){stage.classList.remove('tg-spinning');$('modalBody').querySelectorAll('select').forEach(x=>x.disabled=false);toast(error.message);$('confirmModal').disabled=false;$('confirmModal').textContent='Улучшить за 270 ⭐'}
+    }catch(error){stage.classList.remove('tg-spinning');$('tgUpgradeReels').classList.remove('tg-spinning');$('modalBody').querySelectorAll('select').forEach(x=>x.disabled=false);toast(error.message);recalc()}
   },'Улучшить за 270 ⭐');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
   const recalc=()=>{
@@ -883,6 +890,9 @@ function openGiftUpgrade(item){
     const count=(attributes,key)=>attributes[key]!==$('tgUpgrade'+key[0].toUpperCase()+key.slice(1)).value;
     const total=Object.keys(prices).reduce((sum,key)=>sum+(count(attrs,key)?prices[key]:0),0);
     $('tgUpgradeCost').textContent='Стоимость: '+total.toLocaleString('ru-RU')+' ⭐';
+    $('tgReelModel').textContent=$('tgUpgradeModel').value;
+    $('tgReelPattern').textContent=$('tgUpgradePattern').value;
+    $('tgReelBackground').textContent=$('tgUpgradeBackground').value;
     $('confirmModal').textContent='Улучшить за '+total.toLocaleString('ru-RU')+' ⭐';
     $('confirmModal').disabled=total===0;
   };
