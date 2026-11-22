@@ -981,8 +981,8 @@ async function tgImportGiftPack(pack){
         const entry=zip.file(sourcePath);
         if(!entry)throw new Error('В архиве отсутствует файл '+sourcePath);
         const blob=await entry.async('blob');
-        const destination='pack-assets/'+pack.id+'/'+sourcePath.split('/').map(encodeURIComponent).join('/');
-        const put=await fetch(TG_SUPABASE_URL+'/storage/v1/object/topgram-gift-assets/'+destination,{
+        const destination='pack-assets/'+pack.id+'/'+sourcePath;
+        const put=await fetch(TG_SUPABASE_URL+'/storage/v1/object/topgram-gift-assets/'+destination.split('/').map(encodeURIComponent).join('/'),{
           method:'POST',headers:{'apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/octet-stream','x-upsert':'true'},body:blob
         });
         const data=await put.json().catch(()=>({}));
