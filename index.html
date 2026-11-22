@@ -683,6 +683,7 @@ $('tgAuthVerify').onclick=async()=>{const code=$('tgAuthOtp').value.trim();if(!/
 
 // Keep settings overlay outside the app stacking/overflow context.
 const settingsNode=document.getElementById('settingsView');if(settingsNode&&settingsNode.parentElement!==document.body)document.body.appendChild(settingsNode);
+const modalNode=document.getElementById('modalBackdrop');if(modalNode&&modalNode.parentElement!==document.body)document.body.appendChild(modalNode);
 if(settingsNode){settingsNode.style.setProperty('display','none','important');settingsNode.setAttribute('aria-hidden','true')}document.body.classList.remove('settings-open','account-open','modal-open');
 let chats=[];try{chats=JSON.parse(localStorage.getItem('topgram-chats'))||[]}catch{}
 chats=Array.isArray(chats)?chats:[];chats=chats.filter(c=>c&&typeof c==='object').map((c,i)=>({...c,id:String(c.id||('chat-restored-'+i)),name:String(c.name||'Без имени'),messages:Array.isArray(c.messages)?c.messages:[]}));
