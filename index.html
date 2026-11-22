@@ -1350,7 +1350,7 @@ async function openGiftMarket(){
   const gifts=(data.gifts||[]).filter(g=>g.gift_type==='regular');
   const cards=gifts.map(g=>'<button type="button" class="gift-item tg-market-gift" data-gift-id="'+esc(g.id)+'">'+tgGiftCardArt(g,{})+'<b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐</small></button>').join('');
   modal('Подарки',
-    '<div class="gift-picker-head"><div><strong>Подарки</strong><small>Выбери подарок, чтобы отправить его пользователю</small></div></div>'+
+    '<div class="gift-picker-head"><div><strong>Подарки</strong><small>Выбери подарок, чтобы отправить его пользователю</small></div><button type="button" id="tgOpenNftMarket">✦ NFT рынок</button></div>'+
     '<div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div>'+
     '<div class="gift-catalog tg-market-catalog">'+(cards||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong></div>')+'</div>'+
     '<div class="tg-send-gift-form"><label for="tgGiftRecipient">Получатель · @username</label><input id="tgGiftRecipient" maxlength="25" placeholder="Оставь пустым, чтобы оставить себе" autocapitalize="none">'+
@@ -1376,6 +1376,7 @@ async function openGiftMarket(){
         if(!recipient)openGiftInventory();
       }catch(e){toast(e.message);$('confirmModal').disabled=false}
     },'Отправить подарок');
+  $('tgOpenNftMarket').onclick=openGiftMarketplace;
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
   const updateSelected=()=>{
     const selected=$('modalBody').querySelector('.tg-market-gift.selected');
@@ -1408,18 +1409,51 @@ async function openGiftInventory(){
       (item.gift_message?'<small>«'+esc(item.gift_message)+'»</small>':'')+
       (item.upgrade_prepaid?'<small>✦ Улучшение уже оплачено</small>':'')+
       (canUpgrade?'<button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'">✦ Улучшить'+(item.upgrade_prepaid?' бесплатно':' · '+Number(g.upgrade_price_stars).toLocaleString('ru-RU')+' ⭐')+'</button>':'')+
-      (nft?'<button type="button" class="tg-transfer-open" data-inventory-id="'+esc(item.id)+'">↗ Передать</button>':'')+
+      (nft?(item.active_listing?'<small>✦ На NFT-рынке · '+Number(item.active_listing.price_stars).toLocaleString('ru-RU')+' ⭐</small><button type="button" class="tg-listing-cancel" data-listing-id="'+esc(item.active_listing.id)+'">Снять с продажи</button>':'<button type="button" class="tg-listing-open" data-inventory-id="'+esc(item.id)+'">Выставить на NFT-рынок</button><button type="button" class="tg-transfer-open" data-inventory-id="'+esc(item.id)+'">↗ Передать</button>'):'')+
       '<button type="button" class="tg-save-open" data-inventory-id="'+esc(item.id)+'" data-saved="'+(item.is_saved?'1':'0')+'">'+(item.is_saved?'Скрыть из профиля':'Показать в профиле')+'</button></div></div>';
   }).join('');
   modal('Мои подарки','<div class="gift-picker-head"><div><strong>Мои подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong></div>')+'</div>',close,'Готово');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
   $('modalBody').querySelectorAll('.tg-transfer-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftTransfer(item)});
+  $('modalBody').querySelectorAll('.tg-listing-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftListing(item)});
+  $('modalBody').querySelectorAll('.tg-listing-cancel').forEach(b=>b.onclick=async()=>{try{await tgGiftApi('cancel_listing',{listing_id:b.dataset.listingId});toast('NFT снят с продажи.');openGiftInventory()}catch(e){toast(e.message)}});
   $('modalBody').querySelectorAll('.tg-upgrade-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftUpgrade(item)});
   $('modalBody').querySelectorAll('.tg-save-open').forEach(b=>b.onclick=async()=>{
     try{await tgGiftApi('toggle_save',{inventory_id:b.dataset.inventoryId,is_saved:b.dataset.saved!=='1'});await tgGiftRefreshWallet();openGiftInventory()}
     catch(e){toast(e.message)}
   });
   wireTopgramGiftImages($('modalBody'));
+}
+async function openGiftMarketplace(){
+  let data;try{data=await tgGiftApi('list_marketplace')}catch(error){return toast(error.message)}
+  const listings=data.listings||[];
+  const rows=listings.map(listing=>{
+    const item=listing.inventory||{},gift=item.gift||{},attrs=item.attributes||{};
+    return '<div class="tg-inventory-card">'+tgGiftCardArt(gift,attrs)+'<div class="tg-inventory-info"><b>'+esc(gift.gift_name||'Коллекционный подарок')+' <span class="tg-nft-label">NFT</span></b>'+
+      '<small>№ '+Number(item.serial_number||0)+'</small><small>Модель: '+esc(attrs.model||'—')+'</small><small>Узор: '+esc(attrs.pattern||'—')+'</small><small>Фон: '+esc(attrs.background||'—')+'</small>'+
+      '<small>Продавец: @'+esc(listing.seller_username||'TopGram')+'</small><b>'+Number(listing.price_stars).toLocaleString('ru-RU')+' ⭐</b>'+
+      '<button type="button" class="tg-market-buy-listing" data-listing-id="'+esc(listing.id)+'">Купить NFT</button></div></div>';
+  }).join('');
+  modal('TopGram · NFT рынок','<div class="gift-picker-head"><div><strong>Коллекционные подарки</strong><small>Покупай NFT у других пользователей за Stars</small></div></div><div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">✦</div><strong>Активных объявлений пока нет</strong></div>')+'</div>',close,'Готово');
+  $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
+  $('modalBody').querySelectorAll('.tg-market-buy-listing').forEach(btn=>btn.onclick=()=>{
+    const listing=listings.find(x=>x.id===btn.dataset.listingId);if(!listing)return;
+    modal('Купить коллекционный подарок','<p>Купить NFT «'+esc(listing.inventory?.gift?.gift_name||'Подарок TopGram')+'» за <b>'+Number(listing.price_stars).toLocaleString('ru-RU')+' ⭐</b>?</p><p class="tg-admin-hint">После покупки NFT и его уникальный номер перейдут в твой инвентарь.</p>',async()=>{
+      btn.disabled=true;
+      try{await tgGiftApi('buy_listing',{listing_id:listing.id});await tgGiftRefreshWallet();close();toast('NFT куплен и добавлен в твой инвентарь.');openGiftMarketplace()}
+      catch(error){toast(error.message);btn.disabled=false}
+    },'Купить за '+Number(listing.price_stars).toLocaleString('ru-RU')+' ⭐');
+  });
+  wireTopgramGiftImages($('modalBody'));
+}
+function openGiftListing(item){
+  modal('Выставить NFT на продажу','<div class="tg-admin-form"><label for="tgListingPrice">Цена в Stars</label><input id="tgListingPrice" type="number" min="1" max="1000000000" value="100" inputmode="numeric"><p class="tg-admin-hint">NFT останется у тебя до покупки. После продажи Stars поступят на твой баланс.</p></div>',async()=>{
+    const price=Number($('tgListingPrice').value);
+    if(!Number.isSafeInteger(price)||price<1||price>1000000000)return toast('Укажи цену от 1 до 1 000 000 000 Stars.');
+    $('confirmModal').disabled=true;
+    try{await tgGiftApi('create_listing',{inventory_id:item.id,price_stars:price});close();toast('NFT выставлен на рынок.');openGiftInventory()}
+    catch(error){toast(error.message);$('confirmModal').disabled=false}
+  },'Выставить');
 }
 function openGiftTransfer(item){
   modal('Передать подарок','<div class="tg-admin-form"><label for="tgGiftRecipient">Юзернейм получателя</label><input id="tgGiftRecipient" maxlength="25" placeholder="@username" autocapitalize="none"><p class="tg-admin-hint">Подарок перейдёт в инвентарь выбранного пользователя.</p></div>',async()=>{
