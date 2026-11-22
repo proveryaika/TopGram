@@ -89,7 +89,31 @@ Deno.serve(async (req) => {
     if (signInError || !sessionData.session) {
       return Response.json({ error: "Не удалось войти. Попробуй ещё раз." }, { status: 500 });
     }
-    return Response.json({ session: sessionData.session, user: sessionData.user });
+
+    // Save the app's virtual number in the shared profile table.
+    // Keep the user's existing phone_visible preference unchanged.
+    const signedInUserId = sessionData.user.id;
+    const { data: existingProfile, error: profileReadError } = await admin
+      .from("topgram_profiles")
+      .select("id")
+      .eq("id", signedInUserId)
+      .maybeSingle();
+    if (profileReadError) throw profileReadError;
+
+    if (existingProfile) {
+      const { error: profileUpdateError } = await admin
+        .from("topgram_profiles")
+        .update({ virtual_number: digits, updated_at: new Date().toISOString() })
+        .eq("id", signedInUserId);
+      if (profileUpdateError) throw profileUpdateError;
+    } else {
+      const { error: profileInsertError } = await admin
+        .from("topgram_profiles")
+        .insert({ id: signedInUserId, virtual_number: digits, phone_visible: false });
+      if (profileInsertError) throw profileInsertError;
+    }
+
+    return Response.json({ session: sessionData.session, user: sessionData.user, virtual_number: digits });
   } catch (_error) {
     return Response.json({ error: "Внутренняя ошибка входа." }, { status: 500 });
   }
