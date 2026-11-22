@@ -2201,19 +2201,20 @@ async function openGiftMarket(){
     const selected=$('modalBody').querySelector('.tg-market-gift.selected');
     const gift=selected?gifts.find(g=>g.id===selected.dataset.giftId):null;
     const wrap=$('tgGiftPrepaidWrap');
-    if(wrap){wrap.hidden=!(gift&&gift.upgrade_enabled&&Number(gift.upgrade_issued_count)+Number(gift.upgrade_reserved_count||0)<Number(gift.upgrade_total_supply));}
+    const prepaid=$('tgGiftPrepaid')?.checked===true;
+    const canPrepay=!!(gift&&gift.upgrade_enabled&&Number(gift.upgrade_issued_count)+Number(gift.upgrade_reserved_count||0)<Number(gift.upgrade_total_supply));
+    if(wrap)wrap.hidden=!canPrepay;
+    if(!canPrepay&&$('tgGiftPrepaid'))$('tgGiftPrepaid').checked=false;
+    const total=gift?Number(gift.price_stars)+(prepaid&&canPrepay?Number(gift.upgrade_price_stars||0):0):0;
     $('confirmModal').disabled=!gift;
-    $('confirmModal').textContent=gift?'Отправить за '+Number(gift.price_stars).toLocaleString('ru-RU')+' ⭐':'Отправить подарок';
+    $('confirmModal').textContent=gift?'Отправить «'+String(gift.gift_name||'Подарок')+'» за '+total.toLocaleString('ru-RU')+' ⭐':'Сначала выбери подарок';
+    $('confirmModal').dataset.giftId=gift?gift.id:'';
   };
   $('modalBody').querySelectorAll('.tg-market-gift').forEach(b=>b.onclick=()=>{
     $('modalBody').querySelectorAll('.tg-market-gift').forEach(x=>x.classList.remove('selected'));
     b.classList.add('selected');updateSelected();
   });
-  $('tgGiftPrepaid').onchange=()=>{
-    const selected=$('modalBody').querySelector('.tg-market-gift.selected');
-    const gift=selected?gifts.find(g=>g.id===selected.dataset.giftId):null;
-    if(gift)$('confirmModal').textContent='Отправить за '+(Number(gift.price_stars)+($('tgGiftPrepaid').checked?Number(gift.upgrade_price_stars||0):0)).toLocaleString('ru-RU')+' ⭐';
-  };
+  $('tgGiftPrepaid').onchange=updateSelected;
   $('confirmModal').disabled=true;wireTopgramGiftImages($('modalBody'));
 }
 async function openGiftInventory(){
