@@ -547,7 +547,15 @@ async function tgAuthSyncProfile(){
       body:JSON.stringify({})
     });
     const data=await response.json().catch(()=>({}));
-    if(!response.ok)console.warn('TopGram profile sync:',data.error||response.status);
+    if(!response.ok){console.warn('TopGram profile sync:',data.error||response.status);return;}
+    if(data.display_number){
+      profileData.phone=data.display_number;
+      localStorage.setItem('topgram-linked-number',data.display_number);
+      saveProfile();
+      renderProfile();
+      const accountPhone=document.getElementById('accountPhoneText');
+      if(accountPhone)accountPhone.textContent=data.display_number;
+    }
   }catch(error){console.warn('TopGram profile sync failed:',error)}
 }
 if(tgAuthSavedSession())tgAuthSyncProfile();
