@@ -1203,7 +1203,7 @@ function openGiftAdmin(){
       '<div class="tg-admin-hero"><div><span class="tg-admin-kicker">TOPGRAM CONTROL CENTER</span><h2>Управление подарками</h2><p>Каталог, NFT-выпуски, наборы и операции платформы</p></div><button type="button" id="tgAdminRefresh" title="Обновить">↻</button></div>'+
       '<div class="tg-admin-metrics">'+
         '<div><small>Подарков</small><b>'+gifts.length+'</b></div><div><small>В каталоге</small><b>'+active+'</b></div><div><small>Продано</small><b>'+issued.toLocaleString('ru-RU')+'</b></div><div><small>NFT выпущено</small><b>'+nftIssued.toLocaleString('ru-RU')+'</b></div>'+
-      '</div>'+
+      '</div><div id="tgAdminExtraMetrics" class="tg-admin-metrics"><div><small>Наборы ZIP</small><b>—</b></div><div><small>В инвентарях</small><b>—</b></div><div><small>Объявления</small><b>—</b></div><div><small>Передачи NFT</small><b>—</b></div></div>'+
       '<div class="tg-admin-section-title">Разделы</div>'+
       '<div class="tg-admin-dashboard-actions">'+
         '<button type="button" data-admin-action="packs"><span>📦</span><b>Наборы подарков</b><small>ZIP · pack.json · предпросмотр · импорт</small></button>'+
@@ -1231,6 +1231,10 @@ function openGiftAdmin(){
   $('tgAdminNewPack').onclick=openGiftPacksAdmin;
   $('modalBody').querySelectorAll('[data-admin-action]').forEach(btn=>btn.onclick=()=>({packs:openGiftPacksAdmin,stars:openAdminGrantStars,usernames:openAdminCollectible,stats:openAdminStats}[btn.dataset.adminAction]||(()=>{}))());
   render();
+  tgGiftApi('admin_dashboard').then(data=>{
+    const s=data.stats||{},root=$('tgAdminExtraMetrics');if(!root)return;
+    root.innerHTML='<div><small>Наборы ZIP</small><b>'+Number(s.packs||0).toLocaleString('ru-RU')+'</b></div><div><small>В инвентарях</small><b>'+Number(s.inventory_items||0).toLocaleString('ru-RU')+'</b></div><div><small>Объявления</small><b>'+Number(s.active_listings||0).toLocaleString('ru-RU')+'</b></div><div><small>Передачи NFT</small><b>'+Number(s.transfers||0).toLocaleString('ru-RU')+'</b></div>';
+  }).catch(()=>{});
 }
 function openGiftEditor(selectedGiftId=null){
   if(!topgramGiftAdmin)return toast('Админ-панель доступна только номеру +888 8888.');
