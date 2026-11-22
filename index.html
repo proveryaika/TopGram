@@ -532,7 +532,7 @@ if(tgAuth){document.body.classList.add('tg-auth-active');if(tgAuthSavedSession()
 $('tgAuthStart').onclick=()=>tgAuthShow('phone');
 $('tgAuthPhoneBack').onclick=()=>tgAuthShow('welcome');
 $('tgAuthCodeBack').onclick=()=>tgAuthShow('phone');
-$('tgAuthPrefix').addEventListener('change',()=>{const alias=$('tgAuthPrefix').value==='888';$('tgAuthNumber').value=alias?'8888':'';$('tgAuthNumber').placeholder=alias?'8888':'777 777 77 77';$('tgAuthNumber').maxLength=alias?4:14});
+$('tgAuthPrefix').addEventListener('change',()=>{const alias=$('tgAuthPrefix').value==='888';$('tgAuthNumber').value='';$('tgAuthNumber').placeholder=alias?'Введите 8888':'777 777 77 77';$('tgAuthNumber').maxLength=alias?4:14});
 $('tgAuthNumber').addEventListener('input',()=>{$('tgAuthNumber').value=$('tgAuthNumber').value.replace(/[^0-9 ]/g,'').slice(0,$('tgAuthPrefix').value==='888'?4:14)});
 async function tgAuthCall(name,payload){if(!TG_SUPABASE_ANON_KEY||TG_SUPABASE_ANON_KEY.includes('PASTE_'))throw new Error('Нужно добавить публичный ключ Supabase в настройки TopGram.');const response=await fetch(TG_SUPABASE_URL+'/functions/v1/'+name,{method:'POST',headers:{'Content-Type':'application/json','apikey':TG_SUPABASE_ANON_KEY,'Authorization':'Bearer '+TG_SUPABASE_ANON_KEY},body:JSON.stringify(payload)});let data={};try{data=await response.json()}catch{}if(!response.ok)throw new Error(data.message||data.error||'Ошибка сервера. Попробуй позже.');return data}
 
