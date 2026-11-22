@@ -421,7 +421,7 @@ body.tg-auth-active{overflow:hidden}
 
 
 /* TopGram Stars full-page screen */
-.stars-page{position:fixed;inset:0;z-index:80;background:#17212b;color:#f5f7fa;display:none;flex-direction:column;overflow:auto}
+.stars-page{position:fixed;inset:0;z-index:2147483001;background:#17212b;color:#f5f7fa;display:none;flex-direction:column;overflow:auto}
 .stars-page.open{display:flex}
 .stars-page-head{height:62px;display:flex;align-items:center;gap:18px;padding:0 18px;border-bottom:1px solid #ffffff0d;flex:none}
 .stars-page-back{border:0;background:transparent;color:#eaf4fc;font-size:32px;width:34px;height:44px;padding:0}
@@ -722,7 +722,7 @@ $('settingFolders').onclick=()=>modal('Папки с чатами','<p>Созд�
 $('settingDevices').onclick=()=>modal('Устройства','<p>В демоверсии нет серверных сеансов. Доступно только это устройство и этот браузер.</p>',close,'Понятно');
 $('settingBattery').onclick=()=>{const on=localStorage.getItem('topgram-battery')==='on';modal('Энергосбережение','<p>Уменьшить анимации интерфейса для экономии заряда.</p>',()=>{localStorage.setItem('topgram-battery',on?'off':'on');document.body.classList.toggle('reduce-motion',!on);close();toast(!on?'Энергосбережение включено':'Энергосбережение выключено')},on?'Выключить':'Включить')};
 $('settingLanguage').onclick=()=>modal('Язык','<p>Сейчас доступен русский язык.</p>',close,'Понятно');
-const starsSetting=$('settingStars');if(starsSetting)starsSetting.onclick=()=>{ $('starsPageBalance').textContent=topgramStars.toLocaleString('ru-RU'); $('starsPage').classList.add('open'); $('profileDropdown')?.classList.remove('open'); }; 
+const starsSetting=$('settingStars');if(starsSetting)starsSetting.onclick=()=>{const page=$('starsPage');if(page.parentElement!==document.body)document.body.appendChild(page);$('starsPageBalance').textContent=Number(topgramStars||0).toLocaleString('ru-RU');$('profileDropdown')?.classList.remove('open');page.classList.add('open');};
 $('starsPageBack').onclick=()=>{$('starsPage').classList.remove('open')};
 $('starsTopUpInfo').onclick=()=>toast('Пополнение звёзд пока не подключено');
 ['Premium','Business'].forEach(k=>{const el=$('setting'+k);if(el)el.onclick=()=>modal(el.querySelector('strong').textContent,'<p>Этот раздел пока не подключён в демоверсии TopGram.</p>',close,'Понятно')});
