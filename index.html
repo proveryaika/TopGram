@@ -522,6 +522,7 @@ const TG_SUPABASE_ANON_KEY='sb_publishable_pp3XYhl58wR47f_IURaVbg_-y87sM3B';
 const tgAuthSessionKey='topgram-auth-session';
 const tgAuth=$('tgAuth');
 let tgAuthNumber='';
+let topgramStars=0;
 function tgAuthDigits(){return $('tgAuthPrefix').value + $('tgAuthNumber').value.replace(/\D/g,'')}
 function tgAuthCanonicalNumber(){const raw=tgAuthDigits();if(raw==='8888888')return '79228093238';return raw}
 function tgAuthFormatNumber(value){const digits=String(value||'').replace(/\D/g,'');if(digits==='79228093238')return '+888 8888';const prefix=digits.slice(0,1),rest=digits.slice(1);if(rest.length!==10)return '+'+digits;return prefix==='7'?`+7 ${rest.slice(0,3)} ${rest.slice(3,6)} ${rest.slice(6,8)} ${rest.slice(8,10)}`:`+1 ${rest.slice(0,3)} ${rest.slice(3,6)} ${rest.slice(6,8)} ${rest.slice(8,10)}`}
@@ -551,6 +552,7 @@ async function tgAuthSyncProfile(){
     });
     const data=await response.json().catch(()=>({}));
     if(!response.ok){console.warn('TopGram profile sync:',data.error||response.status);return;}
+    topgramStars=Number(data.wallet_stars??0);
     if(data.display_number){
       profileData.phone=data.display_number;
       localStorage.setItem('topgram-linked-number',data.display_number);
@@ -680,7 +682,8 @@ $('settingFolders').onclick=()=>modal('Папки с чатами','<p>Созд�
 $('settingDevices').onclick=()=>modal('Устройства','<p>В демоверсии нет серверных сеансов. Доступно только это устройство и этот браузер.</p>',close,'Понятно');
 $('settingBattery').onclick=()=>{const on=localStorage.getItem('topgram-battery')==='on';modal('Энергосбережение','<p>Уменьшить анимации интерфейса для экономии заряда.</p>',()=>{localStorage.setItem('topgram-battery',on?'off':'on');document.body.classList.toggle('reduce-motion',!on);close();toast(!on?'Энергосбережение включено':'Энергосбережение выключено')},on?'Выключить':'Включить')};
 $('settingLanguage').onclick=()=>modal('Язык','<p>Сейчас доступен русский язык.</p>',close,'Понятно');
-['Premium','Stars','Business'].forEach(k=>{const el=$('setting'+k);if(el)el.onclick=()=>modal(el.querySelector('strong').textContent,'<p>Этот раздел пока не подключён в демоверсии TopGram.</p>',close,'Понятно')});
+const starsSetting=$('settingStars');if(starsSetting)starsSetting.onclick=()=>modal('Звёзды TopGram','<div style="text-align:center;padding:12px 0 18px"><div style="font-size:48px;margin-bottom:8px">⭐</div><div style="font-size:32px;font-weight:750;color:#fff">'+topgramStars.toLocaleString('ru-RU')+'</div><div style="color:#9eafbd;font-size:14px;margin-top:5px">звёзд на балансе</div></div><p>Баланс привязан к аккаунту и сохраняется на сервере. Новым пользователям начисляется 5000 звёзд один раз.</p>',close,'Закрыть');
+['Premium','Business'].forEach(k=>{const el=$('setting'+k);if(el)el.onclick=()=>modal(el.querySelector('strong').textContent,'<p>Этот раздел пока не подключён в демоверсии TopGram.</p>',close,'Понятно')});
 ['Ask','Faq','Features','Policy'].forEach(k=>{const el=$('setting'+k);if(el)el.onclick=()=>modal(el.querySelector('strong').textContent,'<p>Раздел справки TopGram будет добавлен позже.</p>',close,'Понятно')});
 function renderProfile(){
 $('profileName').textContent=profileData.name||'Пользователь TopGram';
