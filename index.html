@@ -848,65 +848,6 @@ async function openAdminStats(){
 }
 
 const tgGiftUpgradeOptions={
-  model:{cost:120,label:'Модель',values:['Золотая','Сапфировая','Рубиновая','Кристальная']},
-  pattern:{cost:60,label:'Узор',values:['Звёздный','Геометрия','Волны','Орнамент']},
-  background:{cost:90,label:'Фон',values:['Ночное небо','Аметист','Изумруд','Закат']}
-};
-async function tgGiftRefreshWallet(){
-  const data=await tgGiftApi('inventory');
-  topgramStars=Number(data.stars||0);
-  const balance=$('starsPageBalance');if(balance)balance.textContent=topgramStars.toLocaleString('ru-RU');
-  return data;
-}
-function tgGiftCardArt(gift){
-  return giftImageMarkup(gift.asset_key,gift.gift_key);
-}
-async function openGiftMarket(){
-  let data;
-  try{data=await tgGiftApi('list')}catch(e){return toast(e.message)}
-  const gifts=(data.gifts||[]).filter(g=>Number(g.total_supply)>Number(g.issued_count));
-  const cards=gifts.map(g=>'<button type="button" class="gift-item tg-market-gift" data-gift-id="'+esc(g.id)+'">'+tgGiftCardArt(g)+'<b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐</small><small>Осталось '+(Number(g.total_supply)-Number(g.issued_count))+' из '+Number(g.total_supply)+'</small></button>').join('');
-  modal('Маркет подарков',
-    '<div class="gift-picker-head"><div><strong>Подарки TopGram</strong><small>Ограниченные коллекции</small></div></div><div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div><div class="gift-section-title">Доступно к покупке · '+gifts.length+'</div><div class="gift-catalog tg-market-catalog">'+(cards||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong><p>Новые подарки появятся после выпуска владельцем TopGram.</p></div>')+'</div>',
-    async()=>{
-      const selected=$('modalBody').querySelector('.tg-market-gift.selected');
-      if(!selected)return toast('Выбери подарок.');
-      const gift=gifts.find(g=>g.id===selected.dataset.giftId);if(!gift)return;
-      $('confirmModal').disabled=true;
-      try{
-        await tgGiftApi('buy',{gift_id:gift.id});
-        const wallet=await tgGiftRefreshWallet();
-        close();toast('Подарок добавлен в инвентарь. Остаток: '+wallet.stars.toLocaleString('ru-RU')+' ⭐');
-        openGiftInventory();
-      }catch(e){toast(e.message);$('confirmModal').disabled=false}
-    },'Купить за звёзды');
-  $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
-  $('modalBody').querySelectorAll('.tg-market-gift').forEach(b=>b.onclick=()=>{
-    $('modalBody').querySelectorAll('.tg-market-gift').forEach(x=>x.classList.remove('selected'));
-    b.classList.add('selected');const g=gifts.find(x=>x.id===b.dataset.giftId);
-    $('confirmModal').textContent='Купить за '+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐';$('confirmModal').disabled=false;
-  });
-  $('confirmModal').disabled=true;wireTopgramGiftImages($('modalBody'));
-}
-async function openGiftInventory(){
-  let data;
-  try{data=await tgGiftRefreshWallet()}catch(e){return toast(e.message)}
-  const items=data.inventory||[];
-  const rows=items.map(item=>{
-    const g=item.gift||{};
-    const attrs=item.attributes||{};
-    return '<div class="tg-inventory-card">'+tgGiftCardArt(g)+'<div class="tg-inventory-info"><b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>Модель: '+esc(attrs.model||'Классическая')+'</small><small>Узор: '+esc(attrs.pattern||'Без узора')+'</small><small>Фон: '+esc(attrs.background||'Стандартный')+'</small><button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'">Улучшить</button></div></div>';
-  }).join('');
-  modal('Подарки',
-    '<div class="gift-picker-head"><div><strong>Подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут показаны здесь.</p></div>')+'</div>',
-    close,'Готово');
-  $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
-  $('modalBody').querySelectorAll('.tg-upgrade-open').forEach(b=>b.onclick=()=>{
-    const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftUpgrade(item);
-  });
-  wireTopgramGiftImages($('modalBody'));
-}
-const tgGiftUpgradeOptions={
   model:{label:'Модель',values:['Золотая','Сапфировая','Рубиновая','Кристальная','Аметистовая','Жемчужная','Изумрудная','Лунная','Огненная','Ледяная','Космическая','Радужная']},
   pattern:{label:'Узор',values:['Звёздный','Геометрия','Волны','Орнамент','Мозаика','Искры','Цветы','Кристаллы','Градиент','Пиксели','Лепестки','Кометы']},
   background:{label:'Фон',values:['Ночное небо','Аметист','Изумруд','Закат','Северное сияние','Золотая пыль','Ледяной дворец','Космос','Розовый рассвет','Лаванда','Океан','Рубиновый свет','Звёздная галактика','Солнечная вспышка']}
@@ -917,9 +858,7 @@ async function tgGiftRefreshWallet(){
   const balance=$('starsPageBalance');if(balance)balance.textContent=topgramStars.toLocaleString('ru-RU');
   return data;
 }
-function tgGiftCardArt(gift){
-  return giftImageMarkup(gift.asset_key,gift.gift_key);
-}
+function tgGiftCardArt(gift){return giftImageMarkup(gift.asset_key,gift.gift_key)}
 function tgRandomGiftValue(key,current){
   const values=tgGiftUpgradeOptions[key].values.filter(v=>v!==current);
   const pool=values.length?values:tgGiftUpgradeOptions[key].values;
@@ -927,89 +866,46 @@ function tgRandomGiftValue(key,current){
   return pool[bytes[0]%pool.length];
 }
 async function openGiftMarket(){
-  let data;
-  try{data=await tgGiftApi('list')}catch(e){return toast(e.message)}
+  let data;try{data=await tgGiftApi('list')}catch(e){return toast(e.message)}
   const gifts=(data.gifts||[]).filter(g=>Number(g.total_supply)>Number(g.issued_count));
   const cards=gifts.map(g=>'<button type="button" class="gift-item tg-market-gift" data-gift-id="'+esc(g.id)+'">'+tgGiftCardArt(g)+'<b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐</small><small>Осталось '+(Number(g.total_supply)-Number(g.issued_count))+' из '+Number(g.total_supply)+'</small></button>').join('');
-  modal('Маркет подарков',
-    '<div class="gift-picker-head"><div><strong>Подарки TopGram</strong><small>Ограниченные коллекции</small></div></div><div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div><div class="gift-section-title">Доступно к покупке · '+gifts.length+'</div><div class="gift-catalog tg-market-catalog">'+(cards||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong><p>Новые подарки появятся после выпуска владельцем TopGram.</p></div>')+'</div>',
-    async()=>{
-      const selected=$('modalBody').querySelector('.tg-market-gift.selected');
-      if(!selected)return toast('Выбери подарок.');
-      const gift=gifts.find(g=>g.id===selected.dataset.giftId);if(!gift)return;
-      $('confirmModal').disabled=true;
-      try{
-        await tgGiftApi('buy',{gift_id:gift.id});
-        const wallet=await tgGiftRefreshWallet();
-        close();toast('Подарок добавлен в инвентарь. Остаток: '+wallet.stars.toLocaleString('ru-RU')+' ⭐');
-        openGiftInventory();
-      }catch(e){toast(e.message);$('confirmModal').disabled=false}
-    },'Купить за звёзды');
+  modal('Маркет подарков','<div class="gift-picker-head"><div><strong>Подарки TopGram</strong><small>Ограниченные коллекции</small></div></div><div class="tg-market-balance">Твой баланс <b>'+Number(topgramStars).toLocaleString('ru-RU')+' ⭐</b></div><div class="gift-section-title">Доступно к покупке · '+gifts.length+'</div><div class="gift-catalog tg-market-catalog">'+(cards||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Подарков пока нет</strong><p>Новые подарки появятся после выпуска владельцем TopGram.</p></div>')+'</div>',async()=>{
+    const selected=$('modalBody').querySelector('.tg-market-gift.selected');if(!selected)return toast('Выбери подарок.');
+    const gift=gifts.find(g=>g.id===selected.dataset.giftId);if(!gift)return;
+    $('confirmModal').disabled=true;
+    try{await tgGiftApi('buy',{gift_id:gift.id});const wallet=await tgGiftRefreshWallet();close();toast('Подарок добавлен в инвентарь. Остаток: '+wallet.stars.toLocaleString('ru-RU')+' ⭐');openGiftInventory()}
+    catch(e){toast(e.message);$('confirmModal').disabled=false}
+  },'Купить за звёзды');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
-  $('modalBody').querySelectorAll('.tg-market-gift').forEach(b=>b.onclick=()=>{
-    $('modalBody').querySelectorAll('.tg-market-gift').forEach(x=>x.classList.remove('selected'));
-    b.classList.add('selected');const g=gifts.find(x=>x.id===b.dataset.giftId);
-    $('confirmModal').textContent='Купить за '+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐';$('confirmModal').disabled=false;
-  });
+  $('modalBody').querySelectorAll('.tg-market-gift').forEach(b=>b.onclick=()=>{$('modalBody').querySelectorAll('.tg-market-gift').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');const g=gifts.find(x=>x.id===b.dataset.giftId);$('confirmModal').textContent='Купить за '+Number(g.price_stars).toLocaleString('ru-RU')+' ⭐';$('confirmModal').disabled=false});
   $('confirmModal').disabled=true;wireTopgramGiftImages($('modalBody'));
 }
 async function openGiftInventory(){
-  let data;
-  try{data=await tgGiftRefreshWallet()}catch(e){return toast(e.message)}
+  let data;try{data=await tgGiftRefreshWallet()}catch(e){return toast(e.message)}
   const items=data.inventory||[];
-  const rows=items.map(item=>{
-    const g=item.gift||{};
-    const attrs=item.attributes||{};
-    return '<div class="tg-inventory-card">'+tgGiftCardArt(g)+'<div class="tg-inventory-info"><b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>Модель: '+esc(attrs.model||'Классическая')+'</small><small>Узор: '+esc(attrs.pattern||'Без узора')+'</small><small>Фон: '+esc(attrs.background||'Стандартный')+'</small><button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'">🎰 Улучшить бесплатно</button></div></div>';
-  }).join('');
-  modal('Подарки',
-    '<div class="gift-picker-head"><div><strong>Подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут показаны здесь.</p></div>')+'</div>',
-    close,'Готово');
+  const rows=items.map(item=>{const g=item.gift||{},attrs=item.attributes||{};return '<div class="tg-inventory-card">'+tgGiftCardArt(g)+'<div class="tg-inventory-info"><b>'+esc(g.gift_name||'Подарок TopGram')+'</b><small>Модель: '+esc(attrs.model||'Классическая')+'</small><small>Узор: '+esc(attrs.pattern||'Без узора')+'</small><small>Фон: '+esc(attrs.background||'Стандартный')+'</small><button type="button" class="tg-upgrade-open" data-inventory-id="'+esc(item.id)+'">🎰 Улучшить бесплатно</button></div></div>'}).join('');
+  modal('Подарки','<div class="gift-picker-head"><div><strong>Подарки</strong><small>'+items.length+' шт. · '+topgramStars.toLocaleString('ru-RU')+' ⭐</small></div></div><div class="tg-inventory-list">'+(rows||'<div class="gift-empty"><div class="gift-empty-icon">🎁</div><strong>Пока нет подарков</strong><p>Подарки, которые появятся в аккаунте, будут показаны здесь.</p></div>')+'</div>',close,'Готово');
   $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
-  $('modalBody').querySelectorAll('.tg-upgrade-open').forEach(b=>b.onclick=()=>{
-    const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftUpgrade(item);
-  });
+  $('modalBody').querySelectorAll('.tg-upgrade-open').forEach(b=>b.onclick=()=>{const item=items.find(x=>x.id===b.dataset.inventoryId);if(item)openGiftUpgrade(item)});
   wireTopgramGiftImages($('modalBody'));
 }
 function openGiftUpgrade(item){
   const gift=item.gift||{},attrs=item.attributes||{};
   const body='<div class="tg-upgrade-screen"><div class="tg-upgrade-stage" id="tgUpgradeStage">'+tgGiftCardArt(gift)+'</div><div class="tg-upgrade-reels" id="tgUpgradeReels"><div class="tg-upgrade-reel"><small>Модель</small><b id="tgReelModel">'+esc(attrs.model||'Золотая')+'</b></div><div class="tg-upgrade-reel"><small>Узор</small><b id="tgReelPattern">'+esc(attrs.pattern||'Звёздный')+'</b></div><div class="tg-upgrade-reel"><small>Фон</small><b id="tgReelBackground">'+esc(attrs.background||'Ночное небо')+'</b></div></div><h3>'+esc(gift.gift_name||'Подарок')+'</h3><p class="tg-upgrade-subtitle">🎰 Все три характеристики выпадут случайно одновременно</p><div class="tg-current-attributes"><span>Сейчас: '+esc(attrs.model||'Классическая')+' · '+esc(attrs.pattern||'Без узора')+' · '+esc(attrs.background||'Стандартный')+'</span></div><div class="tg-upgrade-result" id="tgUpgradeResult">Нажми кнопку, чтобы запустить рулетку</div><p class="tg-upgrade-disclosure">Улучшение полностью бесплатное. Новые модель, узор и фон сохранятся в инвентаре.</p></div>';
   modal('Рулетка улучшения',body,async()=>{
-    const resultAttributes={
-      model:tgRandomGiftValue('model',attrs.model),
-      pattern:tgRandomGiftValue('pattern',attrs.pattern),
-      background:tgRandomGiftValue('background',attrs.background)
-    };
+    const resultAttributes={model:tgRandomGiftValue('model',attrs.model),pattern:tgRandomGiftValue('pattern',attrs.pattern),background:tgRandomGiftValue('background',attrs.background)};
     const stage=$('tgUpgradeStage'),reels=$('tgUpgradeReels');
     $('confirmModal').disabled=true;$('confirmModal').textContent='Рулетка крутится…';
-    stage.classList.remove('tg-spinning');reels.classList.remove('tg-spinning');void stage.offsetWidth;
-    stage.classList.add('tg-spinning');reels.classList.add('tg-spinning');
-    const keys=['model','pattern','background'];
-    const ids=['tgReelModel','tgReelPattern','tgReelBackground'];
-    const timer=setInterval(()=>{
-      keys.forEach((key,i)=>{
-        const values=tgGiftUpgradeOptions[key].values,bytes=new Uint32Array(1);crypto.getRandomValues(bytes);
-        $(ids[i]).textContent=values[bytes[0]%values.length];
-      });
-    },75);
-    await new Promise(resolve=>setTimeout(resolve,2600));
-    clearInterval(timer);
+    stage.classList.remove('tg-spinning');reels.classList.remove('tg-spinning');void stage.offsetWidth;stage.classList.add('tg-spinning');reels.classList.add('tg-spinning');
+    const keys=['model','pattern','background'],ids=['tgReelModel','tgReelPattern','tgReelBackground'];
+    const timer=setInterval(()=>{keys.forEach((key,i)=>{const values=tgGiftUpgradeOptions[key].values,bytes=new Uint32Array(1);crypto.getRandomValues(bytes);$(ids[i]).textContent=values[bytes[0]%values.length]})},75);
+    await new Promise(resolve=>setTimeout(resolve,2600));clearInterval(timer);
     keys.forEach((key,i)=>$(ids[i]).textContent=resultAttributes[key]);
     $('tgUpgradeResult').innerHTML='<strong>✨ Выпало!</strong><span>'+esc(resultAttributes.model)+'</span><span>'+esc(resultAttributes.pattern)+'</span><span>'+esc(resultAttributes.background)+'</span>';
-    try{
-      await tgGiftApi('upgrade_bundle',{inventory_id:item.id,attributes:resultAttributes});
-      close();toast('Подарок улучшен бесплатно! ✨');
-      if($('profileGiftsArea')?.classList.contains('active'))renderProfileGifts();
-      else openGiftInventory();
-    }catch(error){
-      stage.classList.remove('tg-spinning');reels.classList.remove('tg-spinning');
-      toast(error.message);$('confirmModal').disabled=false;$('confirmModal').textContent='Крутить бесплатно';
-    }
+    try{await tgGiftApi('upgrade_bundle',{inventory_id:item.id,attributes:resultAttributes});close();toast('Подарок улучшен бесплатно! ✨');if($('profileGiftsArea')?.classList.contains('active'))renderProfileGifts();else openGiftInventory()}
+    catch(error){stage.classList.remove('tg-spinning');reels.classList.remove('tg-spinning');toast(error.message);$('confirmModal').disabled=false;$('confirmModal').textContent='Крутить бесплатно'}
   },'Крутить бесплатно');
-  $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');
-  $('confirmModal').disabled=false;
-  $('confirmModal').textContent='Крутить бесплатно';
-  wireTopgramGiftImages($('modalBody'));
+  $('modalBackdrop').classList.add('gift-picker-backdrop');$('modalTitle').style.display='none';$('modalBody').classList.add('gift-picker-body');$('confirmModal').disabled=false;$('confirmModal').textContent='Крутить бесплатно';wireTopgramGiftImages($('modalBody'));
 }
 
 $('settingGift').querySelector('strong').textContent='Маркет подарков';
