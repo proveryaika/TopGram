@@ -1055,6 +1055,13 @@ body.light .tg-inventory-card{background:#fff;border-color:#e8eaed}
   #modalBackdrop.gift-picker-backdrop .tg-admin-color-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 
+
+#modalBackdrop.gift-picker-backdrop .tg-admin-attribute-gift-list{display:grid!important;gap:9px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-attribute-gift{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:13px!important;border:1px solid #34485a!important;border-radius:12px!important;background:#1b2a38!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-attribute-gift b{display:block!important;color:#f5f7fa!important;font-size:13px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-attribute-gift small{display:block!important;color:#9fb0bf!important;font-size:11px!important;margin-top:4px!important}
+#modalBackdrop.gift-picker-backdrop .tg-admin-attribute-gift button{flex:none!important;min-height:36px!important;padding:8px 11px!important;border:0!important;border-radius:9px!important;background:#229ed9!important;color:white!important;font-size:11px!important;font-weight:700!important}
+@media(max-width:560px){#modalBackdrop.gift-picker-backdrop .tg-admin-attribute-gift{align-items:stretch!important;flex-direction:column!important}#modalBackdrop.gift-picker-backdrop .tg-admin-attribute-gift button{width:100%!important}}
 </style>
 </head>
 <body>
@@ -1667,7 +1674,7 @@ function openGiftAdmin(){
         '<div><small>Всего подарков</small><b>'+gifts.length+'</b></div><div><small>Активные</small><b>'+active+'</b></div><div><small>Получено пользователями</small><b>'+issued.toLocaleString('ru-RU')+'</b></div><div><small>NFT выпущено</small><b>'+nftIssued.toLocaleString('ru-RU')+'</b></div>'+
       '</div>'+
       '<div id="tgAdminExtraMetrics" class="tg-admin-metrics"><div><small>ZIP-наборы</small><b>—</b></div><div><small>Коллекционные версии</small><b>—</b></div><div><small>Активные объявления</small><b>—</b></div><div><small>Пользователи</small><b>—</b></div></div>'+
-      '<nav class="tg-admin-reference-tabs"><button type="button" class="active" id="tgAdminTabCatalog">✦ Каталог</button><button type="button" id="tgAdminTabPacks">▣ Наборы подарков</button></nav>'+
+      '<nav class="tg-admin-reference-tabs"><button type="button" class="active" id="tgAdminTabCatalog">✦ Каталог</button><button type="button" id="tgAdminTabAttributes">◇ NFT-атрибуты</button><button type="button" id="tgAdminTabPacks">▣ Наборы подарков</button></nav>'+
       '<section id="tgAdminCatalogPanel">'+
         '<div class="tg-admin-catalog-heading"><div><b>Каталог TopGram</b><small>Поиск, просмотр анимаций, управление статусом и версиями</small></div><button type="button" id="tgAdminAddGift">＋ Добавить подарок</button></div>'+
         '<div class="tg-admin-catalog-tools"><input id="tgAdminGiftSearch" type="search" placeholder="Поиск по ID, названию или ключу"><select id="tgAdminGiftFilter"><option value="all">Все статусы</option><option value="active">Активные</option><option value="hidden">Скрытые</option><option value="nft">С NFT-улучшением</option></select><select id="tgAdminPageSize"><option value="10">10 на странице</option><option value="20">20 на странице</option><option value="50">50 на странице</option><option value="100">100 на странице</option><option value="all">Все</option></select></div>'+
@@ -1676,7 +1683,7 @@ function openGiftAdmin(){
         '<div class="tg-admin-pagination"><span id="tgAdminPageInfo">Показано 0</span><div><button type="button" id="tgAdminPrevPage">← Назад</button><span id="tgAdminPageLabel">1 / 1</span><button type="button" id="tgAdminNextPage">Вперёд →</button></div></div>'+
         '<div class="tg-admin-dashboard-footer"><span>'+nft+' подарков имеют NFT-улучшение</span><button type="button" id="tgAdminAuditOpen">🧾 Журнал операций</button></div>'+
       '</section>'+
-      '<section id="tgAdminPacksPanel" style="display:none"><div class="tg-admin-catalog-heading"><div><b>Управление ZIP-наборами</b><small>Загрузка, проверка pack.json, предпросмотр и импорт</small></div><button type="button" id="tgAdminOpenPacks">＋ Загрузить ZIP</button></div><div class="tg-admin-pack-intro">ZIP-полка и редактор наборов открываются отдельно. Импортируй весь набор или отдельные подарки после проверки анимаций.</div></section>'+
+      '<section id="tgAdminPacksPanel" style="display:none"><div class="tg-admin-catalog-heading"><div><b>Управление ZIP-наборами</b><small>Загрузка, проверка pack.json, предпросмотр и импорт</small></div><button type="button" id="tgAdminOpenPacks">＋ Загрузить ZIP</button></div><div class="tg-admin-pack-intro">ZIP-полка и редактор наборов открываются отдельно. Импортируй весь набор или отдельные подарки после проверки анимаций.</div></section><section id="tgAdminAttributesPanel" style="display:none"><div class="tg-admin-catalog-heading"><div><b>Коллекционные атрибуты</b><small>Модели, узоры, фоны, редкость и анимации для каждого выпуска NFT</small></div></div><div id="tgAdminAttributeGiftList" class="tg-admin-attribute-gift-list"></div></section>'+
       '<div class="tg-admin-dashboard-actions tg-admin-reference-shortcuts">'+
         '<button type="button" data-admin-action="stars"><span>⭐</span><b>Выдать Stars</b><small>Начисление пользователю</small></button>'+
         '<button type="button" data-admin-action="usernames"><span>✦</span><b>Коллекционные имена</b><small>Назначение юзернеймов</small></button>'+
@@ -1738,8 +1745,14 @@ function openGiftAdmin(){
   $('tgAdminRefresh').onclick=async()=>{const b=$('tgAdminRefresh');b.disabled=true;try{await loadTopgramGiftAdmin();close();openGiftAdmin()}finally{b.disabled=false}};
   $('tgAdminAddGift').onclick=()=>openGiftPacksAdmin();
   $('tgAdminOpenPacks').onclick=openGiftPacksAdmin;
-  $('tgAdminTabCatalog').onclick=()=>{$('tgAdminCatalogPanel').style.display='block';$('tgAdminPacksPanel').style.display='none';$('tgAdminTabCatalog').classList.add('active');$('tgAdminTabPacks').classList.remove('active')};
-  $('tgAdminTabPacks').onclick=()=>{$('tgAdminCatalogPanel').style.display='none';$('tgAdminPacksPanel').style.display='block';$('tgAdminTabPacks').classList.add('active');$('tgAdminTabCatalog').classList.remove('active')};
+  const adminTabs=[['Catalog','tgAdminCatalogPanel'],['Attributes','tgAdminAttributesPanel'],['Packs','tgAdminPacksPanel']];
+  const activateAdminTab=name=>{adminTabs.forEach(([key,panel])=>{const active=key===name;$(panel).style.display=active?'block':'none';$('tgAdminTab'+key).classList.toggle('active',active)});};
+  $('tgAdminTabCatalog').onclick=()=>activateAdminTab('Catalog');
+  $('tgAdminTabAttributes').onclick=()=>activateAdminTab('Attributes');
+  $('tgAdminTabPacks').onclick=()=>activateAdminTab('Packs');
+  const attributeList=$('tgAdminAttributeGiftList');
+  attributeList.innerHTML=gifts.map(g=>'<article class="tg-admin-attribute-gift"><div><b>'+esc(g.gift_name||'Без названия')+'</b><small>'+esc(g.gift_key||g.id)+' · '+(g.upgrade_enabled?'NFT включён':'NFT не настроен')+' · '+Number(g.upgrade_issued_count||0)+' / '+Number(g.upgrade_total_supply||0)+' выпущено</small></div><button type="button" data-edit-attributes="'+esc(g.id)+'">Настроить атрибуты</button></article>').join('')||'<p class="tg-admin-empty-cell">Подарков пока нет. Сначала добавь набор.</p>';
+  attributeList.querySelectorAll('[data-edit-attributes]').forEach(button=>button.onclick=()=>openGiftEditor(button.dataset.editAttributes));
   $('tgAdminAuditOpen').onclick=openGiftAdminAudit;
   $('modalBody').querySelectorAll('[data-admin-action]').forEach(btn=>btn.onclick=()=>({stars:openAdminGrantStars,usernames:openAdminCollectible,stats:openAdminStats,craft:openGiftCraftAdmin}[btn.dataset.adminAction]||(()=>{}))());
   tgGiftApi('admin_dashboard').then(data=>{
