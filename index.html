@@ -1508,6 +1508,32 @@ function wireTopgramGiftImages(root){
   });
 }
 
+async function tgAdminLoadGiftAnimation(host,path){
+  if(!host||!path)return;
+  try{
+    if(String(path).includes('..')||/^https?:/i.test(String(path)))throw new Error('Недопустимый путь анимации');
+    const url=TG_SUPABASE_URL+'/storage/v1/object/public/topgram-gift-assets/'+String(path).split('/').map(encodeURIComponent).join('/');
+    const response=await fetch(url);if(!response.ok)throw new Error('Файл анимации недоступен');
+    let bytes=await response.arrayBuffer();
+    if(bytes.byteLength>8*1024*1024)throw new Error('Анимация слишком большая для предпросмотра');
+    const view=new Uint8Array(bytes);
+    if(view[0]===0x1f&&view[1]===0x8b){
+      if(!('DecompressionStream' in window))throw new Error('Браузер не умеет распаковывать TGS');
+      bytes=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+    }
+    const data=JSON.parse(new TextDecoder().decode(bytes));
+    if(!host.isConnected)return;
+    const player=await tgEnsureLottieLibrary();
+    if(!host.isConnected)return;
+    host.innerHTML='';
+    const animation=player.loadAnimation({container:host,renderer:'canvas',loop:true,autoplay:true,animationData:data});
+    (window.__tgAdminGiftAnimations||(window.__tgAdminGiftAnimations=[])).push(animation);
+  }catch(error){if(host.isConnected)host.textContent='Нет предпросмотра'}
+}
+function tgAdminClearGiftAnimations(){
+  (window.__tgAdminGiftAnimations||[]).forEach(x=>{try{x.destroy()}catch(e){}});
+  window.__tgAdminGiftAnimations=[];
+}
 function openGiftAdmin(){
   if(!topgramGiftAdmin)return toast('Админ-панель доступна только номеру +888 8888.');
   const gifts=topgramGiftRows.filter(g=>g.gift_type!=='collectible');
@@ -1515,61 +1541,93 @@ function openGiftAdmin(){
   const nft=gifts.filter(g=>g.upgrade_enabled).length;
   const issued=gifts.reduce((sum,g)=>sum+Number(g.issued_count||0),0);
   const nftIssued=gifts.reduce((sum,g)=>sum+Number(g.upgrade_issued_count||0),0);
-  modal('TopGram · центр управления',
-    '<div class="tg-admin-dashboard">'+
-      '<div class="tg-admin-hero"><div><span class="tg-admin-kicker">TOPGRAM CONTROL CENTER</span><h2>Управление подарками</h2><p>Каталог, NFT-выпуски, наборы и операции платформы</p></div><button type="button" id="tgAdminRefresh" title="Обновить">↻</button></div>'+
-      '<div class="tg-admin-metrics">'+
-        '<div><small>Подарков</small><b>'+gifts.length+'</b></div><div><small>В каталоге</small><b>'+active+'</b></div><div><small>Продано</small><b>'+issued.toLocaleString('ru-RU')+'</b></div><div><small>NFT выпущено</small><b>'+nftIssued.toLocaleString('ru-RU')+'</b></div>'+
-      '</div><div id="tgAdminExtraMetrics" class="tg-admin-metrics"><div><small>Наборы ZIP</small><b>—</b></div><div><small>В инвентарях</small><b>—</b></div><div><small>Объявления</small><b>—</b></div><div><small>Передачи NFT</small><b>—</b></div></div>'+
-      '<div class="tg-admin-section-title">Разделы</div>'+
-      '<div class="tg-admin-dashboard-actions">'+
-        '<button type="button" data-admin-action="packs"><span>📦</span><b>Наборы подарков</b><small>ZIP · pack.json · предпросмотр · импорт</small></button>'+
-        '<button type="button" data-admin-action="stars"><span>⭐</span><b>Баланс Stars</b><small>Начисление пользователям</small></button>'+
-        '<button type="button" data-admin-action="usernames"><span>✦</span><b>Коллекционные имена</b><small>Назначение коллекционных юзернеймов</small></button>'+
-        '<button type="button" data-admin-action="stats"><span>📊</span><b>Статистика</b><small>Пользователи и балансы</small></button>'+
-        '<button type="button" data-admin-action="craft"><span>⚒</span><b>Рецепты крафта</b><small>Ингредиенты, результат и комиссия Stars</small></button>'+
-        '<button type="button" data-admin-action="audit"><span>🧾</span><b>Журнал действий</b><small>Кто, что и почему менял в каталоге</small></button>'+
+  modal('TopGram · Star Gift Catalog',
+    '<div class="tg-admin-dashboard tg-admin-reference-layout">'+
+      '<div class="tg-admin-hero"><div><span class="tg-admin-kicker">TOPGRAM ADMINISTRATION</span><h2>Каталог подарков</h2><p>Управление каталогом, версиями, анимациями и ZIP-наборами</p></div><button type="button" id="tgAdminRefresh" title="Обновить каталог">↻</button></div>'+
+      '<div class="tg-admin-metrics tg-admin-primary-metrics">'+
+        '<div><small>Всего подарков</small><b>'+gifts.length+'</b></div><div><small>Активные</small><b>'+active+'</b></div><div><small>Получено пользователями</small><b>'+issued.toLocaleString('ru-RU')+'</b></div><div><small>NFT выпущено</small><b>'+nftIssued.toLocaleString('ru-RU')+'</b></div>'+
       '</div>'+
-      '<div class="tg-admin-section-title">Каталог TopGram</div>'+
-      '<div class="tg-admin-catalog-tools"><input id="tgAdminGiftSearch" type="search" placeholder="Поиск подарка по названию…"><select id="tgAdminGiftFilter"><option value="all">Все подарки</option><option value="active">В каталоге</option><option value="hidden">Скрытые</option><option value="nft">С NFT-улучшением</option></select></div>'+
-      '<div class="tg-admin-bulk-tools"><div class="tg-admin-bulk-top"><b>Массовое управление</b><button type="button" id="tgAdminSelectVisible">Выбрать все найденные</button></div><input id="tgAdminBulkReason" maxlength="500" placeholder="Причина изменения — обязательна для журнала"><div class="tg-admin-bulk-actions"><button type="button" id="tgAdminBulkEnable">Включить выбранные</button><button type="button" id="tgAdminBulkDisable">Скрыть выбранные</button></div><small id="tgAdminBulkCount">Выбрано: 0</small></div>'+
-      '<div id="tgAdminGiftRows" class="tg-admin-catalog-list"></div>'+
-      '<div class="tg-admin-dashboard-footer"><span>'+nft+' подарков с NFT-улучшением</span><button type="button" id="tgAdminNewPack">＋ Добавить подарки из ZIP</button></div>'+
+      '<div id="tgAdminExtraMetrics" class="tg-admin-metrics"><div><small>ZIP-наборы</small><b>—</b></div><div><small>Коллекционные версии</small><b>—</b></div><div><small>Активные объявления</small><b>—</b></div><div><small>Пользователи</small><b>—</b></div></div>'+
+      '<nav class="tg-admin-reference-tabs"><button type="button" class="active" id="tgAdminTabCatalog">✦ Каталог</button><button type="button" id="tgAdminTabPacks">▣ Наборы подарков</button></nav>'+
+      '<section id="tgAdminCatalogPanel">'+
+        '<div class="tg-admin-catalog-heading"><div><b>Каталог TopGram</b><small>Поиск, просмотр анимаций, управление статусом и версиями</small></div><button type="button" id="tgAdminAddGift">＋ Добавить подарок</button></div>'+
+        '<div class="tg-admin-catalog-tools"><input id="tgAdminGiftSearch" type="search" placeholder="Поиск по ID, названию или ключу"><select id="tgAdminGiftFilter"><option value="all">Все статусы</option><option value="active">Активные</option><option value="hidden">Скрытые</option><option value="nft">С NFT-улучшением</option></select><select id="tgAdminPageSize"><option value="10">10 на странице</option><option value="20">20 на странице</option><option value="50">50 на странице</option><option value="100">100 на странице</option><option value="all">Все</option></select></div>'+
+        '<div class="tg-admin-bulk-tools"><div class="tg-admin-bulk-top"><b>Массовое управление каталогом</b><button type="button" id="tgAdminSelectVisible">Выбрать все на странице</button></div><input id="tgAdminBulkReason" maxlength="500" placeholder="Причина изменения — обязательна для журнала аудита"><div class="tg-admin-bulk-actions"><button type="button" id="tgAdminBulkEnable">Включить выбранные</button><button type="button" id="tgAdminBulkDisable">Отключить выбранные</button><button type="button" id="tgAdminClearSelection">Снять выбор</button></div><small id="tgAdminBulkCount">Выбрано: 0</small></div>'+
+        '<div class="tg-admin-table-wrap"><table class="tg-admin-catalog-table"><thead><tr><th><input type="checkbox" id="tgAdminSelectPage" aria-label="Выбрать страницу"></th><th>Анимация</th><th>ID / ключ</th><th>Название</th><th>Цена</th><th>Тираж</th><th>Получено</th><th>Статус</th><th>NFT</th><th>Действия</th></tr></thead><tbody id="tgAdminGiftRows"></tbody></table></div>'+
+        '<div class="tg-admin-pagination"><span id="tgAdminPageInfo">Показано 0</span><div><button type="button" id="tgAdminPrevPage">← Назад</button><span id="tgAdminPageLabel">1 / 1</span><button type="button" id="tgAdminNextPage">Вперёд →</button></div></div>'+
+        '<div class="tg-admin-dashboard-footer"><span>'+nft+' подарков имеют NFT-улучшение</span><button type="button" id="tgAdminAuditOpen">🧾 Журнал операций</button></div>'+
+      '</section>'+
+      '<section id="tgAdminPacksPanel" style="display:none"><div class="tg-admin-catalog-heading"><div><b>Управление ZIP-наборами</b><small>Загрузка, проверка pack.json, предпросмотр и импорт</small></div><button type="button" id="tgAdminOpenPacks">＋ Загрузить ZIP</button></div><div class="tg-admin-pack-intro">ZIP-полка и редактор наборов открываются отдельно. Импортируй весь набор или отдельные подарки после проверки анимаций.</div></section>'+
+      '<div class="tg-admin-dashboard-actions tg-admin-reference-shortcuts">'+
+        '<button type="button" data-admin-action="stars"><span>⭐</span><b>Выдать Stars</b><small>Начисление пользователю</small></button>'+
+        '<button type="button" data-admin-action="usernames"><span>✦</span><b>Коллекционные имена</b><small>Назначение юзернеймов</small></button>'+
+        '<button type="button" data-admin-action="stats"><span>📊</span><b>Статистика</b><small>Пользователи и балансы</small></button>'+
+        '<button type="button" data-admin-action="craft"><span>⚒</span><b>Рецепты крафта</b><small>Настройка рецептов</small></button>'+
+      '</div>'+
     '</div>',close,'Закрыть');
   $('modalBackdrop').classList.add('gift-picker-backdrop');
   $('modalTitle').style.display='none';
   $('modalBody').classList.add('gift-picker-body');
-  const rows=$('tgAdminGiftRows');
-  const selectedGiftIds=new Set();
-  const render=()=>{
-    const query=$('tgAdminGiftSearch').value.trim().toLowerCase(),filter=$('tgAdminGiftFilter').value;
-    const filtered=gifts.filter(g=>(!query||String(g.gift_name||'').toLowerCase().includes(query))&&(filter==='all'||(filter==='active'&&g.is_active)||(filter==='hidden'&&!g.is_active)||(filter==='nft'&&g.upgrade_enabled)));
-    rows.innerHTML=filtered.map(g=>'<div class="tg-admin-catalog-row"><label class="tg-admin-select"><input type="checkbox" data-select-gift="'+esc(g.id)+'" '+(selectedGiftIds.has(g.id)?'checked':'')+' aria-label="Выбрать '+esc(g.gift_name)+'"></label><div class="tg-admin-gift-icon">'+tgGiftSymbolGlyph(g.gift_name)+'</div><div class="tg-admin-gift-main"><b>'+esc(g.gift_name)+'</b><small>'+Number(g.price_stars||0).toLocaleString('ru-RU')+' ⭐ · '+Number(g.issued_count||0).toLocaleString('ru-RU')+' / '+Number(g.total_supply||0).toLocaleString('ru-RU')+'</small><small>'+(g.is_active?'В каталоге':'Скрыт')+' · '+(g.upgrade_enabled?'NFT включён':'NFT выключен')+(g.upgrade_enabled?' · '+Number(g.upgrade_issued_count||0)+' / '+Number(g.upgrade_total_supply||0):'')+'</small></div><button type="button" data-edit-gift="'+esc(g.id)+'">Настроить</button></div>').join('')||'<div class="tg-admin-empty">Ничего не найдено. Загрузи ZIP-набор, чтобы добавить подарки.</div>';
-    rows.querySelectorAll('[data-edit-gift]').forEach(btn=>btn.onclick=()=>openGiftEditor(btn.dataset.editGift));
-    rows.querySelectorAll('[data-select-gift]').forEach(input=>input.onchange=()=>{if(input.checked)selectedGiftIds.add(input.dataset.selectGift);else selectedGiftIds.delete(input.dataset.selectGift);$('tgAdminBulkCount').textContent='Выбрано: '+selectedGiftIds.size});
-    $('tgAdminBulkCount').textContent='Выбрано: '+selectedGiftIds.size;
+  const rows=$('tgAdminGiftRows'),selected=new Set();
+  let page=1,pageSize=10,filtered=[];
+  const filterRows=()=>{
+    const q=$('tgAdminGiftSearch').value.trim().toLowerCase(),f=$('tgAdminGiftFilter').value;
+    filtered=gifts.filter(g=>(!q||[g.id,g.gift_key,g.gift_name].some(v=>String(v||'').toLowerCase().includes(q)))&&(f==='all'||(f==='active'&&g.is_active)||(f==='hidden'&&!g.is_active)||(f==='nft'&&g.upgrade_enabled)));
+    const pages=pageSize==='all'?1:Math.max(1,Math.ceil(filtered.length/pageSize));page=Math.min(page,pages);
+    const shown=pageSize==='all'?filtered:filtered.slice((page-1)*pageSize,page*pageSize);
+    tgAdminClearGiftAnimations();
+    rows.innerHTML=shown.map(g=>'<tr class="'+(g.is_active?'':'is-disabled')+'"><td><input type="checkbox" data-select-gift="'+esc(g.id)+'" '+(selected.has(g.id)?'checked':'')+' aria-label="Выбрать '+esc(g.gift_name)+'"></td><td><div class="tg-admin-animation" data-gift-animation="'+esc(g.id)+'">'+(g.base_animation_path?'Загрузка…':'—')+'</div></td><td><code>'+esc(String(g.id).slice(0,8))+'</code><small>'+esc(g.gift_key||'—')+'</small></td><td><b>'+esc(g.gift_name||'Без названия')+'</b></td><td><strong>'+Number(g.price_stars||0).toLocaleString('ru-RU')+' ⭐</strong></td><td>'+Number(g.issued_count||0).toLocaleString('ru-RU')+' / '+Number(g.total_supply||0).toLocaleString('ru-RU')+'</td><td>'+Number(g.issued_count||0).toLocaleString('ru-RU')+'</td><td><span class="tg-admin-status '+(g.is_active?'on':'off')+'">'+(g.is_active?'Активен':'Скрыт')+'</span></td><td>'+(g.upgrade_enabled?'<span class="tg-admin-status on">NFT · '+Number(g.upgrade_issued_count||0)+' / '+Number(g.upgrade_total_supply||0)+'</span>':'<span class="tg-admin-status off">Не настроен</span>')+'</td><td><div class="tg-admin-row-actions"><button type="button" data-edit-gift="'+esc(g.id)+'">Настроить</button><button type="button" data-toggle-gift="'+esc(g.id)+'" data-enabled="'+(!g.is_active)+'">'+(g.is_active?'Скрыть':'Включить')+'</button></div></td></tr>').join('')||'<tr><td colspan="10" class="tg-admin-empty-cell">Подарки не найдены.</td></tr>';
+    rows.querySelectorAll('[data-select-gift]').forEach(x=>x.onchange=()=>{if(x.checked)selected.add(x.dataset.selectGift);else selected.delete(x.dataset.selectGift);updateSelection()});
+    rows.querySelectorAll('[data-edit-gift]').forEach(x=>x.onclick=()=>{tgAdminClearGiftAnimations();openGiftEditor(x.dataset.editGift)});
+    rows.querySelectorAll('[data-toggle-gift]').forEach(x=>x.onclick=async()=>{
+      const reason=prompt('Укажи причину изменения статуса (будет сохранена в журнале):');
+      if(reason===null)return;if(reason.trim().length<3)return toast('Причина должна содержать минимум 3 символа.');
+      x.disabled=true;
+      try{await tgGiftApi('set_gift_status',{gift_id:x.dataset.toggleGift,enabled:x.dataset.enabled==='true',reason:reason.trim()});await loadTopgramGiftAdmin();close();openGiftAdmin();toast('Статус подарка изменён.')}
+      catch(e){toast(e.message);x.disabled=false}
+    });
+    rows.querySelectorAll('[data-gift-animation]').forEach(host=>{const gift=shown.find(g=>g.id===host.dataset.giftAnimation);if(gift?.base_animation_path)void tgAdminLoadGiftAnimation(host,gift.base_animation_path)});
+    $('tgAdminPageInfo').textContent='Показано '+(shown.length?(pageSize==='all'?1:(page-1)*pageSize+1):0)+'–'+(pageSize==='all'?shown.length:Math.min(page*pageSize,filtered.length))+' из '+filtered.length;
+    $('tgAdminPageLabel').textContent=page+' / '+pages;
+    $('tgAdminPrevPage').disabled=page<=1;$('tgAdminNextPage').disabled=page>=pages;
+    $('tgAdminSelectPage').checked=shown.length>0&&shown.every(g=>selected.has(g.id));
+    updateSelection();
   };
-  $('tgAdminSelectVisible').onclick=()=>{const query=$('tgAdminGiftSearch').value.trim().toLowerCase(),filter=$('tgAdminGiftFilter').value;gifts.filter(g=>(!query||String(g.gift_name||'').toLowerCase().includes(query))&&(filter==='all'||(filter==='active'&&g.is_active)||(filter==='hidden'&&!g.is_active)||(filter==='nft'&&g.upgrade_enabled))).forEach(g=>selectedGiftIds.add(g.id));render()};
-  const bulkSetStatus=async enabled=>{
-    if(!selectedGiftIds.size)return toast('Сначала выбери подарки.');
-    const reason=$('tgAdminBulkReason').value.trim();if(reason.length<3)return toast('Укажи причину изменения (не менее 3 символов).');
-    const ids=[...selectedGiftIds];$('tgAdminBulkEnable').disabled=true;$('tgAdminBulkDisable').disabled=true;
+  const updateSelection=()=>{
+    $('tgAdminBulkCount').textContent='Выбрано: '+selected.size;
+    $('tgAdminBulkEnable').disabled=!selected.size;$('tgAdminBulkDisable').disabled=!selected.size;
+    $('tgAdminSelectPage').checked=filtered.length>0&&filtered.slice(pageSize==='all'?0:(page-1)*pageSize,pageSize==='all'?undefined:page*pageSize).every(g=>selected.has(g.id));
+  };
+  const bulk=async enabled=>{
+    if(!selected.size)return toast('Сначала выбери подарки.');
+    const reason=$('tgAdminBulkReason').value.trim();if(reason.length<3)return toast('Укажи причину изменения (минимум 3 символа).');
+    const ids=[...selected];$('tgAdminBulkEnable').disabled=true;$('tgAdminBulkDisable').disabled=true;
     let failed=0;
     for(const id of ids){try{await tgGiftApi('set_gift_status',{gift_id:id,enabled,reason})}catch(e){failed++}}
     await loadTopgramGiftAdmin();close();openGiftAdmin();
-    toast(failed?'Изменено '+(ids.length-failed)+' из '+ids.length+'. Ошибок: '+failed+'.':'Статус '+ids.length+' подарков обновлён. Причина записана в журнал.');
+    toast(failed?'Обновлено '+(ids.length-failed)+' из '+ids.length+'. Ошибок: '+failed+'.':'Статусы '+ids.length+' подарков обновлены, причина записана в журнал.');
   };
-  $('tgAdminBulkEnable').onclick=()=>bulkSetStatus(true);
-  $('tgAdminBulkDisable').onclick=()=>bulkSetStatus(false);
-  $('tgAdminGiftSearch').oninput=render;$('tgAdminGiftFilter').onchange=render;
+  $('tgAdminGiftSearch').oninput=()=>{page=1;filterRows()};
+  $('tgAdminGiftFilter').onchange=()=>{page=1;filterRows()};
+  $('tgAdminPageSize').onchange=()=>{pageSize=$('tgAdminPageSize').value==='all'?'all':Number($('tgAdminPageSize').value);page=1;filterRows()};
+  $('tgAdminSelectPage').onchange=()=>{const shown=pageSize==='all'?filtered:filtered.slice((page-1)*pageSize,page*pageSize);shown.forEach(g=>$('tgAdminSelectPage').checked?selected.add(g.id):selected.delete(g.id));filterRows()};
+  $('tgAdminSelectVisible').onclick=()=>{const shown=pageSize==='all'?filtered:filtered.slice((page-1)*pageSize,page*pageSize);shown.forEach(g=>selected.add(g.id));filterRows()};
+  $('tgAdminClearSelection').onclick=()=>{selected.clear();filterRows()};
+  $('tgAdminBulkEnable').onclick=()=>bulk(true);$('tgAdminBulkDisable').onclick=()=>bulk(false);
+  $('tgAdminPrevPage').onclick=()=>{page=Math.max(1,page-1);filterRows()};
+  $('tgAdminNextPage').onclick=()=>{page++;filterRows()};
   $('tgAdminRefresh').onclick=async()=>{const b=$('tgAdminRefresh');b.disabled=true;try{await loadTopgramGiftAdmin();close();openGiftAdmin()}finally{b.disabled=false}};
-  $('tgAdminNewPack').onclick=openGiftPacksAdmin;
-  $('modalBody').querySelectorAll('[data-admin-action]').forEach(btn=>btn.onclick=()=>({packs:openGiftPacksAdmin,stars:openAdminGrantStars,usernames:openAdminCollectible,stats:openAdminStats,craft:openGiftCraftAdmin,audit:openGiftAdminAudit}[btn.dataset.adminAction]||(()=>{}))());
-  render();
+  $('tgAdminAddGift').onclick=()=>openGiftPacksAdmin();
+  $('tgAdminOpenPacks').onclick=openGiftPacksAdmin;$('tgAdminNewPack').onclick=openGiftPacksAdmin;
+  $('tgAdminTabCatalog').onclick=()=>{$('tgAdminCatalogPanel').style.display='block';$('tgAdminPacksPanel').style.display='none';$('tgAdminTabCatalog').classList.add('active');$('tgAdminTabPacks').classList.remove('active')};
+  $('tgAdminTabPacks').onclick=()=>{$('tgAdminCatalogPanel').style.display='none';$('tgAdminPacksPanel').style.display='block';$('tgAdminTabPacks').classList.add('active');$('tgAdminTabCatalog').classList.remove('active')};
+  $('tgAdminAuditOpen').onclick=openGiftAdminAudit;
+  $('modalBody').querySelectorAll('[data-admin-action]').forEach(btn=>btn.onclick=()=>({stars:openAdminGrantStars,usernames:openAdminCollectible,stats:openAdminStats,craft:openGiftCraftAdmin}[btn.dataset.adminAction]||(()=>{}))());
   tgGiftApi('admin_dashboard').then(data=>{
     const s=data.stats||{},root=$('tgAdminExtraMetrics');if(!root)return;
-    root.innerHTML='<div><small>Наборы ZIP</small><b>'+Number(s.packs||0).toLocaleString('ru-RU')+'</b></div><div><small>В инвентарях</small><b>'+Number(s.inventory_items||0).toLocaleString('ru-RU')+'</b></div><div><small>Объявления</small><b>'+Number(s.active_listings||0).toLocaleString('ru-RU')+'</b></div><div><small>Передачи NFT</small><b>'+Number(s.transfers||0).toLocaleString('ru-RU')+'</b></div>';
+    root.innerHTML='<div><small>ZIP-наборы</small><b>'+Number(s.packs||0).toLocaleString('ru-RU')+'</b></div><div><small>NFT-версии</small><b>'+Number(s.collectible_versions||0).toLocaleString('ru-RU')+'</b></div><div><small>Активные объявления</small><b>'+Number(s.active_listings||0).toLocaleString('ru-RU')+'</b></div><div><small>Пользователи</small><b>'+Number(s.users||0).toLocaleString('ru-RU')+'</b></div>';
   }).catch(()=>{});
+  filterRows();
 }
 async function openGiftAdminAudit(){
   if(!topgramGiftAdmin)return toast('Админ-панель доступна только номеру +888 8888.');
